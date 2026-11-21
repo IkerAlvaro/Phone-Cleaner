@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.ikeralvaro.phonecleaner.core.permissions.PermissionManager
 import com.ikeralvaro.phonecleaner.core.util.DAY_MS
 import com.ikeralvaro.phonecleaner.feature.apps.AppRepository
 import com.ikeralvaro.phonecleaner.feature.cleaner.JunkCategory
@@ -44,7 +43,7 @@ class JunkScannerTest {
     fun setUp() {
         root = tmp.newFolder("storage")
         val context = ApplicationProvider.getApplicationContext<Context>()
-        scanner = JunkScanner(context, AppRepository(context, PermissionManager(context)), root)
+        scanner = JunkScanner(context, AppRepository(context), root)
 
         file("DCIM/.thumbnails/a.jpg", 300)
         file("DCIM/Camera/IMG_1.jpg", 5000, ageDays = 400)

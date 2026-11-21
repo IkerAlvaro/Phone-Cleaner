@@ -33,7 +33,6 @@ fun rememberPermissionSnapshot(): State<PermissionSnapshot> {
 @Stable
 class PermissionActions(
     val requestAllFiles: () -> Unit,
-    val requestUsage: () -> Unit,
     val requestMedia: () -> Unit,
     val requestNotifications: () -> Unit,
 )
@@ -61,11 +60,6 @@ fun rememberPermissionActions(onChanged: () -> Unit = {}): PermissionActions {
                     runtimeLauncher.launch(manager.legacyStoragePermissions())
                 } else if (!context.startSafely(intent)) {
                     manager.allFilesAccessFallbackIntent()?.let(context::startSafely)
-                }
-            },
-            requestUsage = {
-                if (!context.startSafely(manager.usageAccessIntent())) {
-                    context.startSafely(manager.usageAccessFallbackIntent())
                 }
             },
             requestMedia = { runtimeLauncher.launch(manager.mediaPermissions()) },

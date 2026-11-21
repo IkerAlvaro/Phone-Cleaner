@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
 import com.ikeralvaro.phonecleaner.core.system.BatterySnapshot
 import com.ikeralvaro.phonecleaner.feature.apps.AppEntry
+import com.ikeralvaro.phonecleaner.feature.apps.AppsLogic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,9 +16,9 @@ import kotlinx.coroutines.launch
 
 data class BatteryUiState(
     val battery: BatterySnapshot? = null,
-    val topApps: List<AppEntry> = emptyList(),
+    /** Apps de usuario que arrancan solas al encender el móvil (pueden gastar batería sin abrirlas). */
+    val autostartApps: List<AppEntry> = emptyList(),
     val unrestrictedApps: List<AppEntry> = emptyList(),
-    val hasUsageAccess: Boolean = true,
     val loadingApps: Boolean = true,
 )
 
@@ -32,12 +33,10 @@ class BatteryViewModel(private val container: AppContainer) : ViewModel() {
 
     fun loadApps() {
         viewModelScope.launch {
-            val hasUsage = container.permissionManager.hasUsageAccess()
             val all = container.appRepository.loadApps()
             apps.value = BatteryUiState(
-                topApps = all.filter { it.foregroundMs24h > 60_000 }.sortedByDescending { it.foregroundMs24h }.take(8),
+                autostartApps = AppsLogic.autostartApps(all),
                 unrestrictedApps = all.filter { it.ignoresBatteryOptimizations && !it.isSystem }.sortedBy { it.label.lowercase() },
-                hasUsageAccess = hasUsage,
                 loadingApps = false,
             )
         }

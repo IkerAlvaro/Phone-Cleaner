@@ -1,6 +1,5 @@
 package com.ikeralvaro.phonecleaner.feature.apps
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,11 +38,9 @@ import com.ikeralvaro.phonecleaner.LocalAppContainer
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.core.permissions.startSafely
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
-import com.ikeralvaro.phonecleaner.core.util.formatDuration
-import com.ikeralvaro.phonecleaner.core.util.fractionOf
+import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.KeyValueRow
-import com.ikeralvaro.phonecleaner.ui.components.LinearMeter
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 
@@ -115,30 +112,23 @@ fun AppDetailContent(
                 )
             }
 
-            val total = app.totalBytes
-            if (total != null) {
-                SectionCard(title = stringResource(R.string.app_detail_size)) {
-                    SizeRow(stringResource(R.string.app_detail_app), app.appBytes ?: 0L, total)
-                    SizeRow(stringResource(R.string.app_detail_data), ((app.dataBytes ?: 0L) - (app.cacheBytes ?: 0L)).coerceAtLeast(0), total)
-                    SizeRow(stringResource(R.string.app_detail_cache), app.cacheBytes ?: 0L, total)
-                    KeyValueRow(stringResource(R.string.app_detail_total), formatBytes(total))
-                }
+            SectionCard(title = stringResource(R.string.app_detail_size)) {
+                KeyValueRow(stringResource(R.string.app_detail_apk_size), formatBytes(app.apkBytes))
+                Text(
+                    stringResource(R.string.app_detail_size_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                KeyValueRow(stringResource(R.string.app_detail_installed), relativeTime(app.installedAt, now).replaceFirstChar { it.uppercase() })
+                KeyValueRow(stringResource(R.string.app_detail_updated), relativeTime(app.updatedAt, now).replaceFirstChar { it.uppercase() })
             }
 
-            SectionCard(title = stringResource(R.string.app_detail_usage)) {
+            SectionCard(title = stringResource(R.string.app_detail_background)) {
                 KeyValueRow(
-                    stringResource(R.string.app_detail_last_used),
-                    app.lastUsedAt?.let { DateUtils.getRelativeTimeSpanString(it, now, DateUtils.MINUTE_IN_MILLIS).toString() }
-                        ?: stringResource(R.string.apps_never_used),
+                    stringResource(R.string.app_detail_autostart),
+                    stringResource(if (app.startsAtBoot) R.string.yes else R.string.no),
                 )
-                KeyValueRow(stringResource(R.string.app_detail_fg_24h), formatDuration(app.foregroundMs24h))
-                KeyValueRow(
-                    stringResource(R.string.app_detail_installed),
-                    DateUtils.getRelativeTimeSpanString(app.installedAt, now, DateUtils.DAY_IN_MILLIS).toString(),
-                )
-            }
-
-            SectionCard(title = stringResource(R.string.app_detail_battery)) {
+                Spacer(Modifier.height(4.dp))
                 Text(
                     stringResource(
                         if (app.ignoresBatteryOptimizations) R.string.app_detail_battery_unrestricted else R.string.app_detail_battery_optimized,
@@ -169,13 +159,5 @@ fun AppDetailContent(
                 Text(stringResource(R.string.app_detail_uninstall))
             }
         }
-    }
-}
-
-@Composable
-private fun SizeRow(label: String, bytes: Long, total: Long) {
-    Column(Modifier.padding(vertical = 4.dp)) {
-        KeyValueRow(label, formatBytes(bytes))
-        LinearMeter(fractionOf(bytes, total), height = 6.dp)
     }
 }

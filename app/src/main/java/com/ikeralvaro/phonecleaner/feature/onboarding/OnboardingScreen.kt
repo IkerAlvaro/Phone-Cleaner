@@ -115,12 +115,6 @@ fun OnboardingContent(
                         granted = permissions.allFiles,
                     )
                     PermissionCard(
-                        stringResource(R.string.perm_usage_title),
-                        stringResource(R.string.perm_usage_desc),
-                        actions.requestUsage,
-                        granted = permissions.usage,
-                    )
-                    PermissionCard(
                         stringResource(R.string.perm_media_title),
                         stringResource(R.string.perm_media_desc),
                         actions.requestMedia,

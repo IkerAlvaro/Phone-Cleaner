@@ -202,3 +202,22 @@ app/src/main/java/com/ikeralvaro/phonecleaner/
 - Al publicar, `MANAGE_EXTERNAL_STORAGE` exige rellenar una declaración en Play Console, y Google puede rechazarla. Si eso ocurre, la app sigue funcionando sin ese permiso: el análisis de basura queda limitado y la caché se borra app por app. Las funciones de fotos, compresión, apps, RAM, batería y monitor no dependen de él.
 - Publicar requiere un AAB firmado con una clave de subida que el usuario genere. El README lo explica (`bundleRelease`).
 - Sin acceso de uso no se pueden mostrar los tamaños, la caché ni el uso de otras apps. La app explica por qué lo necesita.
+
+
+## Cambio 2026-11-21 (tras la primera prueba en un móvil real)
+
+El «Acceso de uso» se eliminó.
+
+**Motivo.** Desde Android 15, es un *ajuste restringido* para las apps instaladas desde un APK: el sistema lo bloquea «por seguridad» y hay que desbloquearlo a mano.
+
+**Qué lo sustituye:**
+- **Gestor de apps:** tamaño de los APK, fechas de instalación y actualización, y «se inicia sola» (la app declara `RECEIVE_BOOT_COMPLETED`).
+- **Batería:** la lista de «apps que se inician solas» en lugar del tiempo de uso.
+- **Caché de todas las apps:** se mide con el espacio libre antes y después.
+
+**Liberar RAM.** A petición del usuario, ahora funciona por **presión de memoria**:
+- la app ocupa memoria nativa rellena de ruido, para que zram no la comprima;
+- el *low memory killer* de Android cierra las apps en segundo plano;
+- después se libera todo y se mide la diferencia real.
+
+El freno de seguridad está en `PressurePolicy`. El margen sobre el umbral de memoria baja es un cuarto del umbral, con un mínimo de 96 MB. Quedó más ajustado que el 1,5× previsto, porque con ese margen se pararía antes de que Android empezara a cerrar las apps en caché. La detención rápida guiada se eliminó de esta pantalla. En el gestor de apps se puede seguir deteniendo cada app desde su ficha.

@@ -15,10 +15,9 @@ data class AppsUiState(
     val apps: List<AppEntry> = emptyList(),
     val sort: AppSort = AppSort.SIZE,
     val selected: Set<String> = emptySet(),
-    val hasUsageAccess: Boolean = true,
     val now: Long = System.currentTimeMillis(),
 ) {
-    val visibleApps: List<AppEntry> get() = AppsLogic.sort(apps, sort, now)
+    val visibleApps: List<AppEntry> get() = AppsLogic.sort(apps, sort)
 }
 
 class AppsViewModel(private val container: AppContainer) : ViewModel() {
@@ -29,17 +28,10 @@ class AppsViewModel(private val container: AppContainer) : ViewModel() {
     fun load() {
         if (queue.isRunning) return
         viewModelScope.launch {
-            val hasUsage = container.permissionManager.hasUsageAccess()
             val apps = container.appRepository.loadApps()
             val installed = apps.map { it.packageName }.toSet()
             _state.update {
-                it.copy(
-                    loading = false,
-                    apps = apps,
-                    hasUsageAccess = hasUsage,
-                    selected = it.selected intersect installed,
-                    now = System.currentTimeMillis(),
-                )
+                it.copy(loading = false, apps = apps, selected = it.selected intersect installed, now = System.currentTimeMillis())
             }
         }
     }

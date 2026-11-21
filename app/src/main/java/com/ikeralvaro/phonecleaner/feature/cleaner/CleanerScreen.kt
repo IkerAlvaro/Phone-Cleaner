@@ -3,6 +3,7 @@ package com.ikeralvaro.phonecleaner.feature.cleaner
 import android.content.Intent
 import android.os.Build
 import android.os.storage.StorageManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -65,7 +66,6 @@ import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionSnapshot
 import com.ikeralvaro.phonecleaner.core.permissions.startSafely
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
-import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
 import com.ikeralvaro.phonecleaner.ui.components.IconBadge
 import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
@@ -92,11 +92,9 @@ fun CleanerScreen(autoStart: Boolean, onBack: () -> Unit) {
     CleanerContent(
         state = state,
         hasFilesAccess = permissions.allFiles,
-        hasUsageAccess = permissions.usage,
         onBack = onBack,
         onScan = viewModel::startScan,
         onGrantFiles = actions.requestAllFiles,
-        onGrantUsage = actions.requestUsage,
         onToggleCategory = viewModel::toggleCategory,
         onToggleItem = viewModel::toggleItem,
         onToggleExpanded = viewModel::toggleExpanded,
@@ -104,13 +102,18 @@ fun CleanerScreen(autoStart: Boolean, onBack: () -> Unit) {
         onClearAllCaches = {
             if (Build.VERSION.SDK_INT >= 30) {
                 try {
+                    viewModel.beforeAppCacheClear()
                     clearCacheLauncher.launch(Intent(StorageManager.ACTION_CLEAR_APP_CACHE))
                 } catch (_: Exception) {
                     actions.requestAllFiles()
                 }
             }
         },
-        onOpenApp = { pkg -> context.startSafely(manager.appDetailsIntent(pkg)) },
+        onOpenStorageSettings = {
+            if (!context.startSafely(Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS))) {
+                context.startSafely(manager.appDetailsIntent())
+            }
+        },
     )
 }
 
@@ -118,17 +121,15 @@ fun CleanerScreen(autoStart: Boolean, onBack: () -> Unit) {
 fun CleanerContent(
     state: CleanerUiState,
     hasFilesAccess: Boolean,
-    hasUsageAccess: Boolean,
     onBack: () -> Unit,
     onScan: () -> Unit,
     onGrantFiles: () -> Unit,
-    onGrantUsage: () -> Unit,
     onToggleCategory: (JunkCategory) -> Unit,
     onToggleItem: (String) -> Unit,
     onToggleExpanded: (JunkCategory) -> Unit,
     onClean: () -> Unit,
     onClearAllCaches: () -> Unit,
-    onOpenApp: (String) -> Unit,
+    onOpenStorageSettings: () -> Unit,
     sdkInt: Int = Build.VERSION.SDK_INT,
 ) {
     Scaffold(
@@ -163,7 +164,7 @@ fun CleanerContent(
                 .padding(padding),
         ) {
             when (state.phase) {
-                CleanerPhase.IDLE -> IdleView(hasFilesAccess, hasUsageAccess, onGrantFiles, onGrantUsage)
+                CleanerPhase.IDLE -> IdleView(hasFilesAccess, onGrantFiles)
                 CleanerPhase.SCANNING -> ProgressView(
                     title = stringResource(R.string.cleaner_scanning),
                     bytes = state.progress?.bytesFound,
@@ -172,8 +173,8 @@ fun CleanerContent(
                 )
                 CleanerPhase.CLEANING -> ProgressView(stringResource(R.string.cleaner_cleaning), state.selectedBytes, null, null)
                 CleanerPhase.RESULTS -> ResultsView(
-                    state, hasFilesAccess, hasUsageAccess, onGrantFiles, onGrantUsage, onToggleCategory, onToggleItem,
-                    onToggleExpanded, onClearAllCaches, onOpenApp, sdkInt,
+                    state, hasFilesAccess, onGrantFiles, onToggleCategory, onToggleItem,
+                    onToggleExpanded, onClearAllCaches, onOpenStorageSettings, sdkInt,
                 )
                 CleanerPhase.DONE -> DoneView(state.freedBytes)
             }
@@ -193,7 +194,7 @@ private fun BottomAction(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun IdleView(hasFiles: Boolean, hasUsage: Boolean, onGrantFiles: () -> Unit, onGrantUsage: () -> Unit) {
+private fun IdleView(hasFiles: Boolean, onGrantFiles: () -> Unit) {
     Column(
         Modifier
             .fillMaxSize()
@@ -209,7 +210,6 @@ private fun IdleView(hasFiles: Boolean, hasUsage: Boolean, onGrantFiles: () -> U
             textAlign = TextAlign.Center,
         )
         if (!hasFiles) PermissionCard(stringResource(R.string.perm_files_title), stringResource(R.string.perm_files_desc), onGrantFiles)
-        if (!hasUsage) PermissionCard(stringResource(R.string.perm_usage_title), stringResource(R.string.perm_usage_desc), onGrantUsage)
     }
 }
 
@@ -251,14 +251,12 @@ private fun ProgressView(title: String, bytes: Long?, detail: String?, path: Str
 private fun ResultsView(
     state: CleanerUiState,
     hasFiles: Boolean,
-    hasUsage: Boolean,
     onGrantFiles: () -> Unit,
-    onGrantUsage: () -> Unit,
     onToggleCategory: (JunkCategory) -> Unit,
     onToggleItem: (String) -> Unit,
     onToggleExpanded: (JunkCategory) -> Unit,
     onClearAllCaches: () -> Unit,
-    onOpenApp: (String) -> Unit,
+    onOpenStorageSettings: () -> Unit,
     sdkInt: Int,
 ) {
     LazyColumn(
@@ -280,7 +278,7 @@ private fun ResultsView(
                 )
             }
         }
-        item { AppCacheCard(state, hasFiles, hasUsage, onGrantFiles, onGrantUsage, onClearAllCaches, onOpenApp, sdkInt) }
+        item { AppCacheCard(state.appCache, hasFiles, onGrantFiles, onClearAllCaches, onOpenStorageSettings, sdkInt) }
         if (!hasFiles) {
             item {
                 PermissionCard(
@@ -399,20 +397,13 @@ private const val MAX_VISIBLE_ITEMS = 50
 
 @Composable
 private fun AppCacheCard(
-    state: CleanerUiState,
+    cache: AppCacheState,
     hasFiles: Boolean,
-    hasUsage: Boolean,
     onGrantFiles: () -> Unit,
-    onGrantUsage: () -> Unit,
     onClearAllCaches: () -> Unit,
-    onOpenApp: (String) -> Unit,
+    onOpenStorageSettings: () -> Unit,
     sdkInt: Int,
 ) {
-    if (!hasUsage || state.appCache == null) {
-        PermissionCard(stringResource(R.string.perm_usage_title), stringResource(R.string.app_cache_needs_usage), onGrantUsage)
-        return
-    }
-    val cache = state.appCache
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(Icons.Rounded.Layers)
@@ -420,13 +411,11 @@ private fun AppCacheCard(
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.app_cache_title), style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    pluralStringResource(R.plurals.apps_count, cache.apps.size, cache.apps.size) + " · " +
-                        stringResource(R.string.app_cache_desc),
+                    stringResource(R.string.app_cache_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(formatBytes(cache.totalBytes), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         }
         cache.freedBytes?.let {
             Spacer(Modifier.height(8.dp))
@@ -447,21 +436,10 @@ private fun AppCacheCard(
                 Button(onClick = onGrantFiles, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_grant)) }
             }
             else -> {
-                Text(stringResource(R.string.app_cache_per_app), style = MaterialTheme.typography.bodySmall)
-                cache.apps.take(8).forEach { app ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        AppIcon(app.packageName, app.label, size = 32.dp)
-                        Spacer(Modifier.width(12.dp))
-                        Text(app.label, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(formatBytes(app.cacheBytes ?: 0L), style = MaterialTheme.typography.labelLarge)
-                        Spacer(Modifier.width(8.dp))
-                        Button(onClick = { onOpenApp(app.packageName) }) { Text(stringResource(R.string.action_open_settings)) }
-                    }
+                Text(stringResource(R.string.app_cache_old_android), style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+                Button(onClick = onOpenStorageSettings, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.app_cache_storage_settings))
                 }
             }
         }

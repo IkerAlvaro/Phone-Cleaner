@@ -125,7 +125,6 @@ fun SettingsContent(
 
             SectionCard(title = stringResource(R.string.settings_permissions)) {
                 PermissionRow(R.string.perm_files_title, R.string.perm_files_desc, permissions.allFiles, actions.requestAllFiles)
-                PermissionRow(R.string.perm_usage_title, R.string.perm_usage_desc, permissions.usage, actions.requestUsage)
                 PermissionRow(R.string.perm_media_title, R.string.perm_media_desc, permissions.media, actions.requestMedia)
                 PermissionRow(
                     R.string.perm_notifications_title,

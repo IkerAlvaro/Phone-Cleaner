@@ -44,13 +44,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ikeralvaro.phonecleaner.LocalAppContainer
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
-import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
-import com.ikeralvaro.phonecleaner.core.util.formatDuration
 import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.EmptyState
-import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.Tag
 import com.ikeralvaro.phonecleaner.ui.components.rememberSequentialLauncher
@@ -64,7 +61,6 @@ fun uninstallIntent(packageName: String): Intent =
 fun AppsScreen(onOpenApp: (String) -> Unit, onBack: (() -> Unit)? = null) {
     val viewModel = appViewModel { AppsViewModel(it) }
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val actions = rememberPermissionActions()
     val manager = LocalAppContainer.current.permissionManager
     var mode by remember { mutableStateOf(SequenceMode.STOP) }
 
@@ -83,7 +79,6 @@ fun AppsScreen(onOpenApp: (String) -> Unit, onBack: (() -> Unit)? = null) {
         onSort = viewModel::setSort,
         onToggle = viewModel::toggle,
         onOpenApp = onOpenApp,
-        onGrantUsage = actions.requestUsage,
         onStopSelected = {
             mode = SequenceMode.STOP
             viewModel.startSequence()?.let(launchSequence)
@@ -102,7 +97,6 @@ fun AppsContent(
     onSort: (AppSort) -> Unit,
     onToggle: (String) -> Unit,
     onOpenApp: (String) -> Unit,
-    onGrantUsage: () -> Unit,
     onStopSelected: () -> Unit,
     onUninstallSelected: () -> Unit,
 ) {
@@ -136,16 +130,6 @@ fun AppsContent(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         ) {
             item { SortChips(state.sort, onSort) }
-            if (!state.hasUsageAccess) {
-                item {
-                    PermissionCard(
-                        stringResource(R.string.perm_usage_title),
-                        stringResource(R.string.perm_usage_desc),
-                        onGrantUsage,
-                        Modifier.padding(vertical = 8.dp),
-                    )
-                }
-            }
             when {
                 state.loading -> item {
                     Box(
@@ -203,10 +187,9 @@ private fun SortChips(selected: AppSort, onSort: (AppSort) -> Unit) {
 
 private fun AppSort.label(): Int = when (this) {
     AppSort.SIZE -> R.string.apps_sort_size
-    AppSort.CACHE -> R.string.apps_sort_cache
-    AppSort.USAGE -> R.string.apps_sort_usage
-    AppSort.UNUSED -> R.string.apps_sort_unused
-    AppSort.RECENT -> R.string.apps_sort_recent
+    AppSort.NAME -> R.string.apps_sort_name
+    AppSort.NEWEST -> R.string.apps_sort_newest
+    AppSort.AUTOSTART -> R.string.apps_sort_autostart
 }
 
 @Composable
@@ -223,19 +206,34 @@ private fun AppRow(app: AppEntry, sort: AppSort, checked: Boolean, now: Long, on
         Column(Modifier.weight(1f)) {
             Text(app.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
-                lastUsedText(app, now),
+                if (sort == AppSort.NEWEST) {
+                    stringResource(R.string.apps_installed, relativeTime(app.installedAt, now))
+                } else {
+                    stringResource(R.string.apps_updated, relativeTime(app.updatedAt, now))
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val unused = AppsLogic.isUnused(app, now)
-            if (app.isSystem || unused) {
-                Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (app.isSystem || app.startsAtBoot || app.ignoresBatteryOptimizations) {
+                Row(
+                    Modifier
+                        .padding(top = 2.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
                     if (app.isSystem) Tag(stringResource(R.string.apps_system_badge))
-                    if (unused) {
+                    if (app.startsAtBoot) {
                         Tag(
-                            stringResource(R.string.apps_unused_badge),
+                            stringResource(R.string.apps_autostart_badge),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            background = MaterialTheme.colorScheme.secondaryContainer,
+                        )
+                    }
+                    if (app.ignoresBatteryOptimizations) {
+                        Tag(
+                            stringResource(R.string.apps_unrestricted_badge),
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                             background = MaterialTheme.colorScheme.tertiaryContainer,
                         )
@@ -244,23 +242,7 @@ private fun AppRow(app: AppEntry, sort: AppSort, checked: Boolean, now: Long, on
             }
         }
         Spacer(Modifier.width(8.dp))
-        Text(
-            trailingValue(app, sort),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        Text(formatBytes(app.apkBytes), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         Checkbox(checked = checked, onCheckedChange = { onToggle() })
     }
-}
-
-@Composable
-private fun lastUsedText(app: AppEntry, now: Long): String {
-    val last = app.lastUsedAt ?: return stringResource(R.string.apps_never_used)
-    return stringResource(R.string.apps_last_used, relativeTime(last, now))
-}
-
-private fun trailingValue(app: AppEntry, sort: AppSort): String = when (sort) {
-    AppSort.CACHE -> app.cacheBytes?.let(::formatBytes) ?: "—"
-    AppSort.USAGE -> formatDuration(app.foregroundMs24h)
-    else -> app.totalBytes?.let(::formatBytes) ?: "—"
 }

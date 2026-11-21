@@ -12,8 +12,6 @@ import com.ikeralvaro.phonecleaner.core.system.StorageSnapshot
 import com.ikeralvaro.phonecleaner.core.system.ThermalLevel
 import com.ikeralvaro.phonecleaner.core.system.ThermalSnapshot
 import com.ikeralvaro.phonecleaner.core.util.DAY_MS
-import com.ikeralvaro.phonecleaner.core.util.HOUR_MS
-import com.ikeralvaro.phonecleaner.core.util.MINUTE_MS
 import com.ikeralvaro.phonecleaner.feature.apps.AppEntry
 import com.ikeralvaro.phonecleaner.feature.cleaner.AppCacheState
 import com.ikeralvaro.phonecleaner.feature.cleaner.JunkCategory
@@ -48,22 +46,22 @@ object FakeData {
     )
     val thermal = ThermalSnapshot(ThermalLevel.NONE, cpuTempC = 38.4f)
 
-    fun app(pkg: String, label: String, size: Long, cache: Long, lastUsedAgo: Long?, fg: Long = 0, system: Boolean = false, unrestricted: Boolean = false) =
+    fun app(pkg: String, label: String, size: Long, installedDaysAgo: Int, updatedDaysAgo: Int, boot: Boolean = false, system: Boolean = false, unrestricted: Boolean = false) =
         AppEntry(
-            packageName = pkg, label = label, isSystem = system, versionName = "5.2.1", installedAt = NOW - 400 * DAY_MS,
-            appBytes = size / 3, dataBytes = size - size / 3, cacheBytes = cache,
-            lastUsedAt = lastUsedAgo?.let { NOW - it }, foregroundMs24h = fg, ignoresBatteryOptimizations = unrestricted,
+            packageName = pkg, label = label, isSystem = system, versionName = "5.2.1",
+            installedAt = NOW - installedDaysAgo * DAY_MS, updatedAt = NOW - updatedDaysAgo * DAY_MS,
+            apkBytes = size, startsAtBoot = boot, ignoresBatteryOptimizations = unrestricted,
         )
 
     val apps = listOf(
-        app("com.whatsapp", "WhatsApp", 6_400 * MB, 890 * MB, 5 * MINUTE_MS, fg = 2 * HOUR_MS + 10 * MINUTE_MS),
-        app("com.instagram.android", "Instagram", 3_100 * MB, 1_200 * MB, 40 * MINUTE_MS, fg = 95 * MINUTE_MS, unrestricted = true),
-        app("com.zhiliaoapp.musically", "TikTok", 2_700 * MB, 960 * MB, 2 * HOUR_MS, fg = 70 * MINUTE_MS),
-        app("com.spotify.music", "Spotify", 1_900 * MB, 640 * MB, 3 * HOUR_MS, fg = 55 * MINUTE_MS, unrestricted = true),
-        app("com.google.android.youtube", "YouTube", 1_400 * MB, 310 * MB, 6 * HOUR_MS, fg = 48 * MINUTE_MS, system = true),
-        app("com.example.game", "Puzzle Quest", 1_250 * MB, 45 * MB, 60 * DAY_MS),
-        app("com.example.maps", "Mapas Offline", 980 * MB, 12 * MB, 45 * DAY_MS),
-        app("com.example.notes", "Notas", 120 * MB, 8 * MB, DAY_MS, fg = 12 * MINUTE_MS),
+        app("com.whatsapp", "WhatsApp", 182 * MB, 900, 2, boot = true, unrestricted = true),
+        app("com.instagram.android", "Instagram", 164 * MB, 700, 5, boot = true),
+        app("com.zhiliaoapp.musically", "TikTok", 410 * MB, 300, 1, boot = true),
+        app("com.spotify.music", "Spotify", 96 * MB, 500, 9, boot = true, unrestricted = true),
+        app("com.google.android.youtube", "YouTube", 140 * MB, 1000, 3, boot = true, system = true),
+        app("com.example.game", "Puzzle Quest", 1_250 * MB, 60, 60),
+        app("com.example.maps", "Mapas Offline", 88 * MB, 45, 45),
+        app("com.example.notes", "Notas", 12 * MB, 3, 3),
     )
 
     private fun junk(category: JunkCategory, vararg items: Pair<String, Long>) =
@@ -78,7 +76,7 @@ object FakeData {
         junk(JunkCategory.OLD_DOWNLOADS, "Download/video.mp4" to 980 * MB, "Download/manual.pdf" to 22 * MB),
         junk(JunkCategory.RESIDUAL_FOLDERS, "Android/media/com.oldapp" to 230 * MB),
     )
-    val appCache = AppCacheState(totalBytes = 3_860 * MB, apps = apps.sortedByDescending { it.cacheBytes })
+    val appCache = AppCacheState()
 
     private var nextId = 1L
     fun photo(size: Long, w: Int = 4000, h: Int = 3000, takenAgo: Long = DAY_MS, path: String = "DCIM/Camera/") =
@@ -90,5 +88,5 @@ object FakeData {
 
     fun group(vararg items: MediaItem) = MediaGroup(items.toList(), items.maxBy { it.pixels }.id)
 
-    val permissionActions = PermissionActions({}, {}, {}, {})
+    val permissionActions = PermissionActions({}, {}, {})
 }

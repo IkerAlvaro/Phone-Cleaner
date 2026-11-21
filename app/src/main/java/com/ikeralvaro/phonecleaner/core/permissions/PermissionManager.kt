@@ -1,26 +1,23 @@
 package com.ikeralvaro.phonecleaner.core.permissions
 
 import android.Manifest
-import android.app.AppOpsManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.os.Process
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 
 data class PermissionSnapshot(
     val allFiles: Boolean,
-    val usage: Boolean,
     val media: Boolean,
     val notifications: Boolean,
 ) {
     companion object {
-        val ALL_GRANTED = PermissionSnapshot(allFiles = true, usage = true, media = true, notifications = true)
+        val ALL_GRANTED = PermissionSnapshot(allFiles = true, media = true, notifications = true)
     }
 }
 
@@ -29,7 +26,6 @@ class PermissionManager(private val context: Context) {
 
     fun snapshot() = PermissionSnapshot(
         allFiles = hasAllFilesAccess(),
-        usage = hasUsageAccess(),
         media = hasMediaAccess(),
         notifications = hasNotifications(),
     )
@@ -37,22 +33,6 @@ class PermissionManager(private val context: Context) {
     fun hasAllFilesAccess(): Boolean = when {
         Build.VERSION.SDK_INT >= 30 -> Environment.isExternalStorageManager()
         else -> granted(Manifest.permission.WRITE_EXTERNAL_STORAGE) && granted(Manifest.permission.READ_EXTERNAL_STORAGE)
-    }
-
-    fun hasUsageAccess(): Boolean {
-        val appOps = context.getSystemService(AppOpsManager::class.java)
-        val mode = if (Build.VERSION.SDK_INT >= 29) {
-            @Suppress("DEPRECATION")
-            appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
-        }
-        return if (mode == AppOpsManager.MODE_DEFAULT) {
-            granted(Manifest.permission.PACKAGE_USAGE_STATS)
-        } else {
-            mode == AppOpsManager.MODE_ALLOWED
-        }
     }
 
     fun hasMediaAccess(): Boolean = hasAllFilesAccess() || mediaReadPermissions().all(::granted)
@@ -86,13 +66,6 @@ class PermissionManager(private val context: Context) {
 
     fun allFilesAccessFallbackIntent(): Intent? =
         if (Build.VERSION.SDK_INT >= 30) Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION) else null
-
-    fun usageAccessIntent(): Intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
-        // Desde Android 10 algunos móviles abren directamente la ficha de esta app.
-        if (Build.VERSION.SDK_INT >= 29) data = packageUri()
-    }
-
-    fun usageAccessFallbackIntent(): Intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
 
     fun appDetailsIntent(packageName: String = context.packageName): Intent =
         Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))

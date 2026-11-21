@@ -29,9 +29,6 @@ class CleanReminderWorker(context: Context, params: WorkerParameters) : Coroutin
                 .filterKeys { it.preselected }
                 .values.sumOf { items -> items.sumOf { it.sizeBytes } }
         }
-        if (permissions.usage) {
-            junk += container.appRepository.loadApps().sumOf { it.cacheBytes ?: 0L }
-        }
         if (junk >= MIN_BYTES_TO_NOTIFY) notify(junk)
         return Result.success()
     }

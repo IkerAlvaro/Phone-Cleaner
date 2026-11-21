@@ -3,14 +3,15 @@ package com.ikeralvaro.phonecleaner.feature.cleaner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
-import com.ikeralvaro.phonecleaner.feature.apps.AppEntry
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class CleanerPhase { IDLE, SCANNING, RESULTS, CLEANING, DONE }
 
@@ -18,11 +19,8 @@ data class JunkGroup(val category: JunkCategory, val items: List<JunkItem>) {
     val totalBytes: Long get() = items.sumOf { it.sizeBytes }
 }
 
-data class AppCacheState(
-    val totalBytes: Long,
-    val apps: List<AppEntry>,
-    val freedBytes: Long? = null,
-)
+/** Resultado de "Vaciar caché de todas las apps": lo liberado se mide con el espacio libre antes y después. */
+data class AppCacheState(val freedBytes: Long? = null)
 
 data class CleanerUiState(
     val phase: CleanerPhase = CleanerPhase.IDLE,
@@ -30,12 +28,11 @@ data class CleanerUiState(
     val groups: List<JunkGroup> = emptyList(),
     val selectedPaths: Set<String> = emptySet(),
     val expanded: Set<JunkCategory> = emptySet(),
-    val appCache: AppCacheState? = null,
+    val appCache: AppCacheState = AppCacheState(),
     val hasFilesAccess: Boolean = false,
-    val hasUsageAccess: Boolean = false,
     val freedBytes: Long = 0L,
 ) {
-    val totalFoundBytes: Long get() = groups.sumOf { it.totalBytes } + (appCache?.totalBytes ?: 0L)
+    val totalFoundBytes: Long get() = groups.sumOf { it.totalBytes }
     val selectedItems: List<JunkItem> get() = groups.flatMap { it.items }.filter { it.path in selectedPaths }
     val selectedBytes: Long get() = selectedItems.sumOf { it.sizeBytes }
 }
@@ -44,6 +41,7 @@ class CleanerViewModel(private val container: AppContainer) : ViewModel() {
     private val _state = MutableStateFlow(CleanerUiState())
     val state: StateFlow<CleanerUiState> = _state.asStateFlow()
     private var job: Job? = null
+    private var freeBeforeCacheClear: Long? = null
 
     fun startScan() {
         if (job?.isActive == true) return
@@ -51,10 +49,8 @@ class CleanerViewModel(private val container: AppContainer) : ViewModel() {
         _state.value = CleanerUiState(
             phase = CleanerPhase.SCANNING,
             hasFilesAccess = permissions.allFiles,
-            hasUsageAccess = permissions.usage,
         )
         job = viewModelScope.launch {
-            val cache = async { if (permissions.usage) loadAppCache() else null }
             val found = if (permissions.allFiles) {
                 container.junkScanner.scan { progress -> _state.update { it.copy(progress = progress) } }
             } else {
@@ -69,7 +65,6 @@ class CleanerViewModel(private val container: AppContainer) : ViewModel() {
                     phase = CleanerPhase.RESULTS,
                     groups = groups,
                     selectedPaths = preselected,
-                    appCache = cache.await(),
                 )
             }
         }
@@ -100,21 +95,21 @@ class CleanerViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    /** Tras la pantalla del sistema "Vaciar caché": vuelve a medir y calcula lo liberado de verdad. */
-    fun onAppCacheCleared() {
-        val before = _state.value.appCache?.totalBytes ?: return
-        viewModelScope.launch {
-            val after = loadAppCache()
-            val freed = (before - after.totalBytes).coerceAtLeast(0L)
-            container.settingsRepository.recordClean(freed)
-            _state.update { it.copy(appCache = after.copy(freedBytes = freed)) }
-        }
+    /** Justo antes de abrir la pantalla del sistema "Vaciar caché": se anota el espacio libre. */
+    fun beforeAppCacheClear() {
+        freeBeforeCacheClear = container.storageReader.read().freeBytes
     }
 
-    private suspend fun loadAppCache(): AppCacheState {
-        val apps = container.appRepository.loadApps()
-            .filter { (it.cacheBytes ?: 0L) > 0L }
-            .sortedByDescending { it.cacheBytes }
-        return AppCacheState(apps.sumOf { it.cacheBytes ?: 0L }, apps)
+    /** Al volver: se mide de nuevo el espacio libre y se calcula lo liberado de verdad. */
+    fun onAppCacheCleared() {
+        val before = freeBeforeCacheClear ?: return
+        freeBeforeCacheClear = null
+        viewModelScope.launch {
+            delay(1_000) // el sistema termina de borrar en segundo plano
+            val after = withContext(Dispatchers.IO) { container.storageReader.read().freeBytes }
+            val freed = (after - before).coerceAtLeast(0L)
+            container.settingsRepository.recordClean(freed)
+            _state.update { it.copy(appCache = AppCacheState(freedBytes = freed)) }
+        }
     }
 }

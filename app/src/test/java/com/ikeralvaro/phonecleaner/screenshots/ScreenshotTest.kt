@@ -15,15 +15,16 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import com.ikeralvaro.phonecleaner.core.permissions.PermissionSnapshot
 import com.ikeralvaro.phonecleaner.core.util.DAY_MS
 import com.ikeralvaro.phonecleaner.core.util.HOUR_MS
-import com.ikeralvaro.phonecleaner.core.util.MINUTE_MS
 import com.ikeralvaro.phonecleaner.feature.apps.AppDetailContent
 import com.ikeralvaro.phonecleaner.feature.apps.AppSort
+import com.ikeralvaro.phonecleaner.feature.apps.AppsLogic
 import com.ikeralvaro.phonecleaner.feature.apps.AppsContent
 import com.ikeralvaro.phonecleaner.feature.apps.AppsUiState
 import com.ikeralvaro.phonecleaner.feature.battery.BatteryContent
 import com.ikeralvaro.phonecleaner.feature.battery.BatteryUiState
 import com.ikeralvaro.phonecleaner.feature.boost.BoostContent
 import com.ikeralvaro.phonecleaner.feature.boost.BoostPhase
+import com.ikeralvaro.phonecleaner.feature.boost.BoostStage
 import com.ikeralvaro.phonecleaner.feature.boost.BoostUiState
 import com.ikeralvaro.phonecleaner.feature.cleaner.CleanerContent
 import com.ikeralvaro.phonecleaner.feature.cleaner.CleanerPhase
@@ -106,10 +107,9 @@ class ScreenshotTest(private val dark: Boolean) {
                 selectedPaths = groups.filter { it.category.preselected }.flatMap { g -> g.items.map { it.path } }.toSet(),
                 appCache = FakeData.appCache,
                 hasFilesAccess = true,
-                hasUsageAccess = true,
             ),
-            hasFilesAccess = true, hasUsageAccess = true, onBack = {}, onScan = {}, onGrantFiles = {}, onGrantUsage = {},
-            onToggleCategory = {}, onToggleItem = {}, onToggleExpanded = {}, onClean = {}, onClearAllCaches = {}, onOpenApp = {},
+            hasFilesAccess = true, onBack = {}, onScan = {}, onGrantFiles = {},
+            onToggleCategory = {}, onToggleItem = {}, onToggleExpanded = {}, onClean = {}, onClearAllCaches = {}, onOpenStorageSettings = {},
             sdkInt = 35,
         )
     }
@@ -117,26 +117,31 @@ class ScreenshotTest(private val dark: Boolean) {
     @Test fun cleanerDone() = capture("03_limpieza_hecha") {
         CleanerContent(
             state = CleanerUiState(phase = CleanerPhase.DONE, freedBytes = 1_240 * MB),
-            hasFilesAccess = true, hasUsageAccess = true, onBack = {}, onScan = {}, onGrantFiles = {}, onGrantUsage = {},
-            onToggleCategory = {}, onToggleItem = {}, onToggleExpanded = {}, onClean = {}, onClearAllCaches = {}, onOpenApp = {},
+            hasFilesAccess = true, onBack = {}, onScan = {}, onGrantFiles = {},
+            onToggleCategory = {}, onToggleItem = {}, onToggleExpanded = {}, onClean = {}, onClearAllCaches = {}, onOpenStorageSettings = {},
         )
     }
 
     @Test fun boost() = capture("04_liberar_ram") {
-        val candidates = FakeData.apps.filter { (it.lastUsedAt ?: 0) > NOW - 3 * HOUR_MS - MINUTE_MS }
+        BoostContent(BoostUiState(phase = BoostPhase.IDLE, memory = FakeData.memory), onBack = {}, onBoost = {})
+    }
+
+    @Test fun boostRunning() = capture("04b_liberar_ram_en_curso") {
         BoostContent(
-            BoostUiState(
-                phase = BoostPhase.READY, memory = FakeData.memory, candidates = candidates,
-                selected = candidates.map { it.packageName }.toSet(), canStopOtherApps = false,
-            ),
-            onBack = {}, onToggle = {}, onGrantUsage = {}, onBoost = {}, now = NOW,
+            BoostUiState(phase = BoostPhase.RUNNING, memory = FakeData.memory, liveUsedFraction = 0.91f, stage = BoostStage.HOLDING),
+            onBack = {}, onBoost = {},
         )
+    }
+
+    @Test fun boostDone() = capture("04c_liberar_ram_hecho") {
+        val after = FakeData.memory.copy(availableBytes = 4_300 * MB)
+        BoostContent(BoostUiState(phase = BoostPhase.DONE, memory = after, freedBytes = 1_400 * MB), onBack = {}, onBoost = {})
     }
 
     @Test fun apps() = capture("05_apps") {
         AppsContent(
             AppsUiState(loading = false, apps = FakeData.apps, sort = AppSort.SIZE, selected = setOf("com.example.game"), now = NOW),
-            onBack = null, onSort = {}, onToggle = {}, onOpenApp = {}, onGrantUsage = {}, onStopSelected = {}, onUninstallSelected = {},
+            onBack = null, onSort = {}, onToggle = {}, onOpenApp = {}, onStopSelected = {}, onUninstallSelected = {},
         )
     }
 
@@ -148,11 +153,11 @@ class ScreenshotTest(private val dark: Boolean) {
         BatteryContent(
             BatteryUiState(
                 battery = FakeData.battery,
-                topApps = FakeData.apps.filter { it.foregroundMs24h > 0 }.sortedByDescending { it.foregroundMs24h }.take(4),
+                autostartApps = AppsLogic.autostartApps(FakeData.apps),
                 unrestrictedApps = FakeData.apps.filter { it.ignoresBatteryOptimizations },
                 loadingApps = false,
             ),
-            onBack = {}, onGrantUsage = {}, onOpenApp = {}, onBatterySaver = {}, onDisplay = {}, onOpenBoost = {}, onUnrestrictedSettings = {},
+            onBack = {}, onOpenApp = {}, onBatterySaver = {}, onDisplay = {}, onOpenBoost = {}, onUnrestrictedSettings = {},
         )
     }
 
@@ -207,7 +212,7 @@ class ScreenshotTest(private val dark: Boolean) {
     @Test fun settings() = capture("12_ajustes") {
         SettingsContent(
             AppSettings(),
-            PermissionSnapshot(allFiles = true, usage = true, media = true, notifications = false),
+            PermissionSnapshot(allFiles = true, media = true, notifications = false),
             FakeData.permissionActions,
             version = "1.0.0",
             onBack = {}, onTheme = {}, onReminder = {},
@@ -215,11 +220,11 @@ class ScreenshotTest(private val dark: Boolean) {
     }
 
     @Test fun onboardingWelcome() = capture("13_bienvenida") {
-        OnboardingContent(0, PermissionSnapshot(false, false, false, false), FakeData.permissionActions, onNext = {}, onFinish = {})
+        OnboardingContent(0, PermissionSnapshot(false, false, false), FakeData.permissionActions, onNext = {}, onFinish = {})
     }
 
     @Test fun onboardingPermissions() = capture("14_permisos") {
-        OnboardingContent(1, PermissionSnapshot(allFiles = true, usage = false, media = true, notifications = false), FakeData.permissionActions, onNext = {}, onFinish = {})
+        OnboardingContent(1, PermissionSnapshot(allFiles = true, media = false, notifications = false), FakeData.permissionActions, onNext = {}, onFinish = {})
     }
 
     companion object {

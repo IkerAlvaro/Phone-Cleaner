@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,18 +35,15 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
-import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.permissions.startSafely
 import com.ikeralvaro.phonecleaner.core.system.BatteryHealth
 import com.ikeralvaro.phonecleaner.core.system.BatterySnapshot
 import com.ikeralvaro.phonecleaner.core.system.ChargeStatus
 import com.ikeralvaro.phonecleaner.core.system.PowerSource
-import com.ikeralvaro.phonecleaner.core.util.formatDuration
 import com.ikeralvaro.phonecleaner.feature.apps.AppEntry
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.CategoryRow
 import com.ikeralvaro.phonecleaner.ui.components.KeyValueRow
-import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 import com.ikeralvaro.phonecleaner.ui.components.UsageRing
@@ -56,7 +54,6 @@ import com.ikeralvaro.phonecleaner.ui.components.formatCelsius
 fun BatteryScreen(onBack: () -> Unit, onOpenBoost: () -> Unit, onOpenApp: (String) -> Unit) {
     val viewModel = appViewModel { BatteryViewModel(it) }
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val actions = rememberPermissionActions()
     val context = LocalContext.current
     LifecycleResumeEffect(Unit) {
         viewModel.loadApps()
@@ -65,7 +62,6 @@ fun BatteryScreen(onBack: () -> Unit, onOpenBoost: () -> Unit, onOpenApp: (Strin
     BatteryContent(
         state = state,
         onBack = onBack,
-        onGrantUsage = actions.requestUsage,
         onOpenApp = onOpenApp,
         onBatterySaver = { context.openBatterySaver() },
         onDisplay = { context.startSafely(Intent(Settings.ACTION_DISPLAY_SETTINGS)) },
@@ -85,7 +81,6 @@ fun android.content.Context.openBatterySaver() {
 fun BatteryContent(
     state: BatteryUiState,
     onBack: () -> Unit,
-    onGrantUsage: () -> Unit,
     onOpenApp: (String) -> Unit,
     onBatterySaver: () -> Unit,
     onDisplay: () -> Unit,
@@ -104,14 +99,24 @@ fun BatteryContent(
             BatteryHeader(state.battery)
             state.battery?.let { DetailsCard(it) }
 
-            SectionCard(title = stringResource(R.string.battery_top_apps)) {
-                if (!state.hasUsageAccess) {
-                    PermissionCard(stringResource(R.string.perm_usage_title), stringResource(R.string.perm_usage_desc), onGrantUsage)
+            SectionCard(title = stringResource(R.string.battery_autostart)) {
+                if (state.autostartApps.isEmpty() && !state.loadingApps) {
+                    Text(stringResource(R.string.battery_autostart_none), style = MaterialTheme.typography.bodyMedium)
                 } else {
-                    state.topApps.forEach { app -> AppUsageRow(app, formatDuration(app.foregroundMs24h)) { onOpenApp(app.packageName) } }
+                    state.autostartApps.take(MAX_AUTOSTART_ROWS).forEach { app ->
+                        AppUsageRow(app, null) { onOpenApp(app.packageName) }
+                    }
+                    val more = state.autostartApps.size - MAX_AUTOSTART_ROWS
+                    if (more > 0) {
+                        Text(
+                            pluralStringResource(R.plurals.battery_more, more, more),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        stringResource(R.string.battery_top_apps_note),
+                        stringResource(R.string.battery_autostart_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -194,6 +199,8 @@ private fun AppUsageRow(app: AppEntry, value: String?, onClick: () -> Unit) {
         TextButton(onClick = onClick) { Text("›") }
     }
 }
+
+private const val MAX_AUTOSTART_ROWS = 8
 
 private fun ChargeStatus.label(): Int = when (this) {
     ChargeStatus.CHARGING -> R.string.battery_charging

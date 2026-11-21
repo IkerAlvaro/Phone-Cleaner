@@ -18,11 +18,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <!-- Conservar la ubicación GPS de las fotos al comprimirlas (Android 10+). -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
-    <!-- Tamaño, caché y uso de cada app. Se concede en Ajustes > Acceso de uso. -->
-    <uses-permission
-        android:name="android.permission.PACKAGE_USAGE_STATS"
-        tools:ignore="ProtectedPermissions" />
-    <!-- Liberar RAM en Android 13 o inferior. -->
+    <!-- Refuerzo de "Liberar RAM" en Android 13 o inferior. -->
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
     <!-- Desinstalar apps desde el gestor de apps (con confirmación del sistema). -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />

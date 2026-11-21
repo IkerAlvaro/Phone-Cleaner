@@ -14,7 +14,7 @@ import com.ikeralvaro.phonecleaner.core.system.MemoryReader
 import com.ikeralvaro.phonecleaner.core.system.StorageReader
 import com.ikeralvaro.phonecleaner.core.system.ThermalReader
 import com.ikeralvaro.phonecleaner.feature.apps.AppRepository
-import com.ikeralvaro.phonecleaner.feature.boost.RamBooster
+import com.ikeralvaro.phonecleaner.feature.boost.MemoryPressureBooster
 import com.ikeralvaro.phonecleaner.feature.cleaner.JunkScanner
 import com.ikeralvaro.phonecleaner.feature.compress.MediaSaver
 import com.ikeralvaro.phonecleaner.feature.compress.PhotoCompressor
@@ -32,9 +32,9 @@ class AppContainer(context: Context) {
     val batteryReader = BatteryReader(appContext)
     val cpuReader = CpuReader()
     val thermalReader = ThermalReader(appContext)
-    val appRepository = AppRepository(appContext, permissionManager)
+    val appRepository = AppRepository(appContext)
     val junkScanner = JunkScanner(appContext, appRepository)
-    val ramBooster = RamBooster(appContext, appRepository, memoryReader)
+    val memoryBooster = MemoryPressureBooster(appContext, memoryReader, appRepository)
     val mediaRepository = MediaRepository(appContext, permissionManager)
     private val mediaSaver = MediaSaver(appContext)
     val photoCompressor = PhotoCompressor(appContext, mediaSaver)
