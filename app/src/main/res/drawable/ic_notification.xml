@@ -1,15 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Silueta del logo (hoja con nervio + 2 destellos) para la barra de notificaciones. Android solo usa el alfa. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+    <!-- Hoja con la hendidura del nervio (hueco por evenOdd) -->
     <path
         android:fillColor="#FFFFFFFF"
-        android:pathData="M5.5,18.5 C4.8,11.5 8.5,6.5 19.5,5 C19.8,13.5 15.5,18.6 7.2,19.4 C6.5,19.4 5.9,19.1 5.5,18.5 Z" />
+        android:fillType="evenOdd"
+        android:pathData="M19.6,4.4 C20.2,11.2 16.9,17.1 10.8,18.6 C8.8,19.1 7.4,18.2 7,16.7 C6.6,11.4 11.2,5.9 19.6,4.4 Z M9.2,16.6 C11.6,12.2 14.8,8.7 18.4,6.6 C15.9,9.9 12.8,13.3 9.2,16.6 Z" />
+    <!-- Tallo -->
     <path
-        android:pathData="M3.5,20.5 L7,17"
-        android:strokeWidth="1.6"
+        android:pathData="M7.9,17.4 L5,20.3"
+        android:strokeWidth="2"
         android:strokeColor="#FFFFFFFF"
         android:strokeLineCap="round" />
+    <!-- Destello grande (arriba a la izquierda) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M6,2.8 Q6.45,5.85 9.5,6.3 Q6.45,6.75 6,9.8 Q5.55,6.75 2.5,6.3 Q5.55,5.85 6,2.8 Z" />
+    <!-- Destello pequeño (abajo a la derecha) -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M19.4,15.2 Q19.72,17.38 21.9,17.7 Q19.72,18.02 19.4,20.2 Q19.08,18.02 16.9,17.7 Q19.08,17.38 19.4,15.2 Z" />
 </vector>

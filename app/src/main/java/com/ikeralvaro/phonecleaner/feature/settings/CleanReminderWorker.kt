@@ -37,6 +37,8 @@ class CleanReminderWorker(context: Context, params: WorkerParameters) : Coroutin
     private fun notify(bytes: Long) {
         val notification = NotificationCompat.Builder(applicationContext, Notifications.CHANNEL_REMINDER)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(Notifications.BRAND_COLOR)
+            .setLargeIcon(Notifications.largeIcon(applicationContext))
             .setContentTitle(applicationContext.getString(R.string.reminder_title))
             .setContentText(applicationContext.getString(R.string.reminder_text, formatBytes(bytes)))
             .setContentIntent(Notifications.openAppIntent(applicationContext))

@@ -5,6 +5,8 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.ikeralvaro.phonecleaner.MainActivity
@@ -27,6 +29,22 @@ object Notifications {
         )
     }
 
+    /** Verde del logo: círculo del icono pequeño y barra de progreso. */
+    const val BRAND_COLOR = 0xFF00B046.toInt()
+
+    @Volatile
+    private var logo: Bitmap? = null
+
+    /** Logo de la app como icono grande de la notificación (se carga una vez). */
+    fun largeIcon(context: Context): Bitmap? = logo ?: try {
+        val size = context.resources.getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
+        BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)
+            ?.let { Bitmap.createScaledBitmap(it, size, size, true) }
+            ?.also { logo = it }
+    } catch (_: Exception) {
+        null
+    }
+
     fun openAppIntent(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
         0,
@@ -37,6 +55,8 @@ object Notifications {
     fun compressProgress(context: Context, done: Int, total: Int) =
         NotificationCompat.Builder(context, CHANNEL_COMPRESS)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(BRAND_COLOR)
+            .setLargeIcon(largeIcon(context))
             .setContentTitle(context.getString(R.string.compress_notification_title))
             .setContentText(context.getString(R.string.compress_running, (done + 1).coerceAtMost(total), total))
             .setProgress(total.coerceAtLeast(1), done, total == 0)

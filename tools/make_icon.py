@@ -73,6 +73,15 @@ def foreground_layer(sq: np.ndarray) -> Image.Image:
     return out
 
 
+def original_layer(sq: np.ndarray, size: int) -> Image.Image:
+    """El logo original tal cual, a 78 de 108 dp: llena el área visible (72 dp) y sus esquinas redondeadas
+    quedan fuera de la máscara del launcher. Los destellos siguen dentro incluso con máscara circular."""
+    art = Image.fromarray(sq.astype(np.uint8), "RGBA").resize((int(size * 78 / 108),) * 2, Image.LANCZOS)
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    layer.paste(art, ((size - art.width) // 2, (size - art.height) // 2), art)
+    return layer
+
+
 def composite(fg: Image.Image, size: int) -> Image.Image:
     bg = Image.fromarray(background(size).astype(np.uint8), "RGB").convert("RGBA")
     bg.alpha_composite(fg.resize((size, size), Image.LANCZOS))
@@ -95,7 +104,7 @@ def main() -> None:
         d = RES / f"mipmap-{name}"
         d.mkdir(parents=True, exist_ok=True)
         layer_px = int(108 * k)
-        fg.resize((layer_px, layer_px), Image.LANCZOS).save(d / "ic_launcher_foreground.png", optimize=True)
+        original_layer(sq, layer_px).save(d / "ic_launcher_foreground.png", optimize=True)
         mono = Image.new("RGBA", (layer_px, layer_px), (0, 0, 0, 0))
         mono.putalpha(fg.resize((layer_px, layer_px), Image.LANCZOS).split()[3])
         mono.save(d / "ic_launcher_monochrome.png", optimize=True)
