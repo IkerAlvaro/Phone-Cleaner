@@ -3,6 +3,7 @@ package com.ikeralvaro.phonecleaner.screenshots
 import android.app.Application
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.core.app.ApplicationProvider
@@ -12,6 +13,7 @@ import coil3.SingletonImageLoader
 import coil3.annotation.DelicateCoilApi
 import coil3.test.FakeImageLoaderEngine
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.ikeralvaro.phonecleaner.core.ads.LocalAdPreview
 import com.ikeralvaro.phonecleaner.core.permissions.PermissionSnapshot
 import com.ikeralvaro.phonecleaner.core.util.DAY_MS
 import com.ikeralvaro.phonecleaner.core.util.HOUR_MS
@@ -31,6 +33,8 @@ import com.ikeralvaro.phonecleaner.feature.cleaner.CleanerPhase
 import com.ikeralvaro.phonecleaner.feature.cleaner.CleanerUiState
 import com.ikeralvaro.phonecleaner.feature.compress.CompressCandidate
 import com.ikeralvaro.phonecleaner.feature.compress.CompressContent
+import com.ikeralvaro.phonecleaner.feature.compress.CompressRun
+import com.ikeralvaro.phonecleaner.feature.compress.RunState
 import com.ikeralvaro.phonecleaner.feature.compress.CompressUiState
 import com.ikeralvaro.phonecleaner.feature.home.HomeContent
 import com.ikeralvaro.phonecleaner.feature.home.HomeUiState
@@ -44,6 +48,7 @@ import com.ikeralvaro.phonecleaner.feature.monitor.MonitorContent
 import com.ikeralvaro.phonecleaner.feature.monitor.MonitorUiState
 import com.ikeralvaro.phonecleaner.feature.onboarding.OnboardingContent
 import com.ikeralvaro.phonecleaner.feature.settings.AppSettings
+import com.ikeralvaro.phonecleaner.feature.settings.AdsSettingsState
 import com.ikeralvaro.phonecleaner.feature.settings.SettingsContent
 import com.ikeralvaro.phonecleaner.screenshots.FakeData.GB
 import com.ikeralvaro.phonecleaner.screenshots.FakeData.MB
@@ -86,7 +91,11 @@ class ScreenshotTest(private val dark: Boolean) {
     }
 
     private fun capture(name: String, content: @Composable () -> Unit) {
-        compose.setContent { PhoneCleanerTheme(darkTheme = dark) { content() } }
+        compose.setContent {
+            CompositionLocalProvider(LocalAdPreview provides true) {
+                PhoneCleanerTheme(darkTheme = dark) { content() }
+            }
+        }
         compose.waitForIdle()
         compose.onRoot().captureRoboImage("../docs/screenshots/${name}_${if (dark) "oscuro" else "claro"}.png")
     }
@@ -209,6 +218,17 @@ class ScreenshotTest(private val dark: Boolean) {
         )
     }
 
+    @Test fun compressDone() = capture("11b_comprimir_hecho") {
+        CompressContent(
+            CompressUiState(
+                loading = false,
+                run = CompressRun(RunState.FINISHED, 9, 9, savedBytes = 27 * MB, compressedCount = 9, originals = listOf("x"), originalsTrashed = true),
+            ),
+            onBack = {}, onGrantMedia = {}, onTab = {}, onMode = {}, onToggle = {}, onSelectAll = {}, onStart = {},
+            onTrashOriginals = {}, onDismissResult = {}, sdkInt = 35,
+        )
+    }
+
     @Test fun settings() = capture("12_ajustes") {
         SettingsContent(
             AppSettings(),
@@ -216,6 +236,7 @@ class ScreenshotTest(private val dark: Boolean) {
             FakeData.permissionActions,
             version = "1.0.0",
             onBack = {}, onTheme = {}, onReminder = {},
+            ads = AdsSettingsState(price = "2,99 €", privacyOptionsRequired = true),
         )
     }
 

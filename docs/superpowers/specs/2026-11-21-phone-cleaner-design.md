@@ -221,3 +221,16 @@ El «Acceso de uso» se eliminó.
 - después se libera todo y se mide la diferencia real.
 
 El freno de seguridad está en `PressurePolicy`. El margen sobre el umbral de memoria baja es un cuarto del umbral, con un mínimo de 96 MB. Quedó más ajustado que el 1,5× previsto, porque con ese margen se pararía antes de que Android empezara a cerrar las apps en caché. La detención rápida guiada se eliminó de esta pantalla. En el gestor de apps se puede seguir deteniendo cada app desde su ficha.
+
+
+## Cambio: monetización (2026-11-21)
+
+El usuario pidió anuncios «no tan intrusivos, pero que se vean» y eligió estos formatos:
+- **Nativos en tarjetas:** en Inicio y en las pantallas de resultado de limpieza, RAM y compresión. Tienen el estilo de la app y la etiqueta «Anuncio».
+- **Pantalla completa al salir de un resultado:** con `AdFrequencyPolicy`: nunca en la primera tarea, como mínimo 3 minutos entre anuncios y como mucho 6 al día.
+- **Compra única «Quitar anuncios»:** con Play Billing 9 (`remove_ads`).
+
+Detalles técnicos:
+- **Consentimiento:** con UMP, obligatorio en el EEE. La opción «Privacidad de los anuncios» está en Ajustes.
+- **IDs de AdMob:** la versión de depuración usa siempre los de prueba; la release los lee de `admob.properties`.
+- **Privacidad:** la app deja de ser «100 % sin conexión». Los archivos siguen sin salir del móvil, pero el SDK de AdMob usa Internet y el ID de publicidad. Se actualizaron los textos y el README, y se añadió `PRIVACY.md`.

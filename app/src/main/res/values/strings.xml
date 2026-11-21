@@ -201,11 +201,11 @@
     <string name="settings_permissions">Permisos</string>
     <string name="settings_about">Acerca de</string>
     <string name="settings_version">Versión %1$s</string>
-    <string name="settings_privacy" formatted="false">100 % sin conexión: sin anuncios, sin rastreo y sin enviar datos a ningún servidor.</string>
+    <string name="settings_privacy">Tus archivos, fotos y datos nunca salen del móvil. La app muestra anuncios de Google AdMob, que pueden usar el identificador de publicidad del móvil; puedes cambiar tu consentimiento en «Privacidad de los anuncios» o quitarlos con un pago único.</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_desc">Usa el idioma del móvil. En Android 13 o superior puedes elegirlo en los ajustes de la app.</string>
     <string name="onboarding_title">Limpia, acelera y cuida tu móvil</string>
-    <string name="onboarding_subtitle">Libera espacio, detén lo que sobra y vigila la batería. Todo sin conexión y sin anuncios.</string>
+    <string name="onboarding_subtitle">Libera espacio, cierra lo que sobra y vigila la batería. Tus archivos nunca salen del móvil.</string>
     <string name="onboarding_permissions_title">Permisos</string>
     <string name="onboarding_permissions_subtitle">Phone Cleaner solo usa estos permisos dentro de tu móvil. Puedes concederlos ahora o más tarde.</string>
     <string name="onboarding_next">Siguiente</string>
@@ -235,6 +235,17 @@
     <string name="app_cache_desc">Datos temporales que las apps vuelven a crear. Android pedirá confirmación.</string>
     <string name="app_cache_old_android">En esta versión de Android la caché se vacía desde los ajustes de almacenamiento.</string>
     <string name="app_cache_storage_settings">Abrir ajustes de almacenamiento</string>
+    <string name="ad_label">Anuncio</string>
+    <string name="remove_ads_title">Quitar anuncios</string>
+    <string name="remove_ads_desc">Pago único, sin suscripción. Apoyas el desarrollo de la app.</string>
+    <string name="remove_ads_buy">Comprar · %1$s</string>
+    <string name="remove_ads_buy_no_price">Comprar</string>
+    <string name="remove_ads_thanks">¡Gracias! Ya no verás anuncios.</string>
+    <string name="remove_ads_unavailable">La compra no está disponible ahora mismo. Inténtalo más tarde.</string>
+    <string name="remove_ads_error">No se pudo completar la compra.</string>
+    <string name="ads_privacy">Privacidad de los anuncios</string>
+    <string name="ads_privacy_desc">Cambia tu consentimiento para los anuncios personalizados</string>
+    <string name="privacy_policy">Política de privacidad</string>
     <plurals name="items_count">
         <item quantity="one">%d elemento</item>
         <item quantity="other">%d elementos</item>

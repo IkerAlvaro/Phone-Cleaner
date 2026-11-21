@@ -63,6 +63,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
+import com.ikeralvaro.phonecleaner.core.ads.AdPlacement
+import com.ikeralvaro.phonecleaner.core.ads.NativeAdCard
+import com.ikeralvaro.phonecleaner.core.ads.rememberFinishWithAd
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
@@ -80,6 +83,7 @@ fun CompressScreen(onBack: () -> Unit) {
         viewModel.load()
         onPauseOrDispose { }
     }
+    val finishWithAd = rememberFinishWithAd()
     val trashLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {
         viewModel.onOriginalsTrashed(it.resultCode == Activity.RESULT_OK)
     }
@@ -106,7 +110,7 @@ fun CompressScreen(onBack: () -> Unit) {
         onSelectAll = viewModel::selectAllVisible,
         onStart = viewModel::start,
         onTrashOriginals = askTrash,
-        onDismissResult = viewModel::dismissResult,
+        onDismissResult = { finishWithAd(viewModel::dismissResult) },
     )
 }
 
@@ -173,6 +177,9 @@ fun CompressContent(
                 }
             }
             item(span = full) { RunCard(state.run, sdkInt, onTrashOriginals, onDismissResult) }
+            if (state.run.state == RunState.FINISHED) {
+                item(span = full) { NativeAdCard(AdPlacement.RESULT) }
+            }
             item(span = full) {
                 SecondaryTabRow(selectedTabIndex = state.tab.ordinal, containerColor = MaterialTheme.colorScheme.background) {
                     Tab(

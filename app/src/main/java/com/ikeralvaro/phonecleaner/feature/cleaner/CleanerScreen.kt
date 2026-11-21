@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.storage.StorageManager
 import android.provider.Settings
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -62,6 +63,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ikeralvaro.phonecleaner.LocalAppContainer
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
+import com.ikeralvaro.phonecleaner.core.ads.AdPlacement
+import com.ikeralvaro.phonecleaner.core.ads.NativeAdCard
+import com.ikeralvaro.phonecleaner.core.ads.rememberFinishWithAd
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionSnapshot
 import com.ikeralvaro.phonecleaner.core.permissions.startSafely
@@ -88,11 +92,14 @@ fun CleanerScreen(autoStart: Boolean, onBack: () -> Unit) {
     val clearCacheLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         viewModel.onAppCacheCleared()
     }
+    val finishWithAd = rememberFinishWithAd()
+    val leave = { if (state.phase == CleanerPhase.DONE) finishWithAd(onBack) else onBack() }
+    BackHandler(enabled = state.phase == CleanerPhase.DONE) { leave() }
 
     CleanerContent(
         state = state,
         hasFilesAccess = permissions.allFiles,
-        onBack = onBack,
+        onBack = leave,
         onScan = viewModel::startScan,
         onGrantFiles = actions.requestAllFiles,
         onToggleCategory = viewModel::toggleCategory,
@@ -451,10 +458,11 @@ private fun DoneView(freedBytes: Long) {
     Column(
         Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
     ) {
+        Spacer(Modifier.height(24.dp))
         UsageRing(progress = 1f, size = 200.dp) {
             Icon(
                 Icons.Rounded.CheckCircle,
@@ -471,6 +479,8 @@ private fun DoneView(freedBytes: Long) {
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
         )
+        Spacer(Modifier.height(24.dp))
+        NativeAdCard(AdPlacement.RESULT)
     }
 }
 

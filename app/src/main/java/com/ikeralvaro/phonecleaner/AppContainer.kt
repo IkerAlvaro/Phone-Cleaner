@@ -7,6 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.ikeralvaro.phonecleaner.core.ads.AdsManager
+import com.ikeralvaro.phonecleaner.core.ads.ConsentManager
+import com.ikeralvaro.phonecleaner.core.billing.BillingManager
 import com.ikeralvaro.phonecleaner.core.permissions.PermissionManager
 import com.ikeralvaro.phonecleaner.core.system.BatteryReader
 import com.ikeralvaro.phonecleaner.core.system.CpuReader
@@ -39,6 +42,9 @@ class AppContainer(context: Context) {
     private val mediaSaver = MediaSaver(appContext)
     val photoCompressor = PhotoCompressor(appContext, mediaSaver)
     val videoCompressor = VideoCompressor(appContext, mediaSaver)
+    val consentManager = ConsentManager(appContext)
+    val adsManager = AdsManager(appContext, settingsRepository, consentManager)
+    val billingManager = BillingManager(appContext, settingsRepository)
 }
 
 val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("AppContainer no disponible") }

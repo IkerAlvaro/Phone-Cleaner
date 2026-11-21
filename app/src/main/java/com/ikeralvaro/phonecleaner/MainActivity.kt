@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -45,6 +46,14 @@ class MainActivity : ComponentActivity() {
                 }
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
                 onDispose { }
+            }
+
+            // Consentimiento de anuncios (GDPR) y compra «Quitar anuncios»: después del onboarding.
+            LaunchedEffect(current.onboardingDone) {
+                if (current.onboardingDone) {
+                    container.billingManager.connect()
+                    container.consentManager.gather(this@MainActivity) { container.adsManager.initializeIfPossible() }
+                }
             }
 
             CompositionLocalProvider(LocalAppContainer provides container) {

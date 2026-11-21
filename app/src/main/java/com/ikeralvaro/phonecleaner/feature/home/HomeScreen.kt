@@ -36,6 +36,8 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
+import com.ikeralvaro.phonecleaner.core.ads.AdPlacement
+import com.ikeralvaro.phonecleaner.core.ads.NativeAdCard
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
@@ -125,6 +127,8 @@ fun HomeContent(
             Spacer(Modifier.height(20.dp))
             SectionHeader(stringResource(R.string.home_tools))
             ToolGrid(onTool)
+            Spacer(Modifier.height(16.dp))
+            NativeAdCard(AdPlacement.HOME)
             Spacer(Modifier.height(16.dp))
             Text(
                 text = lastCleanText(state, now),

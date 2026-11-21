@@ -1,5 +1,20 @@
 import java.util.Properties
 
+// IDs de prueba oficiales de Google AdMob: muestran anuncios "Test Ad" y nunca generan ingresos ni sanciones.
+val testAdmobAppId = "ca-app-pub-3940256099942544~3347511713"
+val testNativeUnitId = "ca-app-pub-3940256099942544/2247696110"
+val testInterstitialUnitId = "ca-app-pub-3940256099942544/1033173712"
+
+// IDs reales: crea admob.properties en la raíz (no se sube a git). Ver README > Monetización.
+val admobProps = Properties().apply {
+    val file = rootProject.file("admob.properties")
+    if (file.exists()) file.inputStream().use(::load)
+}
+fun admob(key: String, fallback: String): String = admobProps.getProperty(key)?.takeIf { it.isNotBlank() } ?: fallback
+if (admobProps.isEmpty) {
+    logger.warn("Phone Cleaner: no hay admob.properties; la versión release usará los anuncios de PRUEBA de Google.")
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -17,6 +32,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "PRIVACY_POLICY_URL", "\"${admob("privacyPolicyUrl", "https://github.com/IkerAlvaro/Phone-Cleaner/blob/main/PRIVACY.md")}\"")
+        buildConfigField("String", "REMOVE_ADS_PRODUCT_ID", "\"remove_ads\"")
     }
 
     androidResources {
@@ -39,7 +56,15 @@ android {
     }
 
     buildTypes {
+        debug {
+            manifestPlaceholders["admobAppId"] = testAdmobAppId
+            buildConfigField("String", "ADMOB_NATIVE_UNIT_ID", "\"$testNativeUnitId\"")
+            buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"$testInterstitialUnitId\"")
+        }
         release {
+            manifestPlaceholders["admobAppId"] = admob("appId", testAdmobAppId)
+            buildConfigField("String", "ADMOB_NATIVE_UNIT_ID", "\"${admob("nativeUnitId", testNativeUnitId)}\"")
+            buildConfigField("String", "ADMOB_INTERSTITIAL_UNIT_ID", "\"${admob("interstitialUnitId", testInterstitialUnitId)}\"")
             signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
@@ -57,6 +82,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     lint {
@@ -99,6 +125,9 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.play.services.ads)
+    implementation(libs.ump)
+    implementation(libs.billing.ktx)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

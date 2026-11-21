@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.boost
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +38,9 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
+import com.ikeralvaro.phonecleaner.core.ads.AdPlacement
+import com.ikeralvaro.phonecleaner.core.ads.NativeAdCard
+import com.ikeralvaro.phonecleaner.core.ads.rememberFinishWithAd
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
@@ -54,7 +58,10 @@ fun BoostScreen(onBack: () -> Unit) {
     }
     // Si la app pasa a segundo plano a mitad, se cancela y se suelta la memoria.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.cancel() }
-    BoostContent(state, onBack = onBack, onBoost = viewModel::start)
+    val finishWithAd = rememberFinishWithAd()
+    val leave = { if (state.phase == BoostPhase.DONE) finishWithAd(onBack) else onBack() }
+    BackHandler(enabled = state.phase == BoostPhase.DONE) { leave() }
+    BoostContent(state, onBack = leave, onBoost = viewModel::start)
 }
 
 @Composable
@@ -137,6 +144,9 @@ fun BoostContent(state: BoostUiState, onBack: () -> Unit, onBoost: () -> Unit) {
                     }
                 }
                 BoostPhase.IDLE -> Unit
+            }
+            if (state.phase == BoostPhase.DONE) {
+                NativeAdCard(AdPlacement.RESULT)
             }
 
             SectionCard {

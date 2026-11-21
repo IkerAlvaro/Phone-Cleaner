@@ -4,7 +4,8 @@ App Android para **limpiar y optimizar el móvil**: archivos basura, caché de l
 
 - **Interfaz:** blanco y verde en modo claro, negro puro (AMOLED) y verde en modo oscuro.
 - **Idiomas:** español, e inglés si el móvil está en inglés.
-- **Privacidad:** 100 % sin conexión, sin anuncios ni rastreo. La app ni siquiera pide el permiso de Internet.
+- **Privacidad:** tus archivos, fotos y datos nunca salen del móvil.
+- **Financiación:** anuncios de Google AdMob, que piden consentimiento según el RGPD, y un pago único para quitarlos (ver [Monetización](#monetización)).
 
 | Inicio | Limpieza | Sistema | Archivos |
 |---|---|---|---|
@@ -50,6 +51,8 @@ Además, Android 15 marca como **«ajuste restringido»** varios permisos cuando
 | Acceso a todos los archivos (`MANAGE_EXTERNAL_STORAGE`) | Buscar basura y vaciar la caché de todas las apps | Solo se analiza la caché de las apps, y se vacía app por app |
 | Fotos y vídeos (`READ_MEDIA_*`, `ACCESS_MEDIA_LOCATION`) | Duplicados, compresión y conservar el GPS de las fotos | No se pueden analizar ni comprimir fotos |
 | Notificaciones | Recordatorio semanal y progreso de la compresión | No hay avisos |
+| `INTERNET`, `ACCESS_NETWORK_STATE`, `AD_ID` (los añade el SDK de AdMob) | Cargar anuncios | — |
+| `BILLING` (lo añade Google Play Billing) | Compra «Quitar anuncios» | — |
 | `KILL_BACKGROUND_PROCESSES`, `REQUEST_DELETE_PACKAGES` | Refuerzo de «Liberar RAM» en Android 13 o inferior y desinstalar | — |
 
 La visibilidad de otras apps se limita a las que tienen icono (`<queries>`). La app no usa `QUERY_ALL_PACKAGES`.
@@ -91,9 +94,56 @@ Datos técnicos:
    - **Acceso a todos los archivos:** explica que es una app de limpieza y gestión de almacenamiento. Google puede rechazar este permiso. Si lo hace, quítalo del manifiesto: la app sigue funcionando sin él, aunque la limpieza queda limitada a la caché de cada app.
    - **Permisos de fotos y vídeos:** la función principal es encontrar duplicados y comprimir.
    - **Servicios en primer plano:** de tipo *procesamiento multimedia* y *sincronización de datos*, para comprimir vídeos.
-   - **Seguridad de los datos:** no se recopila ni se comparte ningún dato, porque la app funciona sin conexión.
+   - **Contiene anuncios:** sí.
+   - **Seguridad de los datos.** La app no envía archivos ni fotos a ningún sitio, pero el SDK de AdMob sí recopila y comparte con Google:
+     - el identificador de publicidad y otros ID del dispositivo;
+     - interacciones con los anuncios;
+     - diagnósticos;
+     - ubicación aproximada a partir de la IP.
+
+     Todo con fines de publicidad, analítica y prevención de fraude. Marca también «los datos se cifran en tránsito». Google explica qué declarar en su guía de AdMob para el formulario de seguridad de datos.
+   - **Política de privacidad:** publica [`PRIVACY.md`](PRIVACY.md) (por ejemplo con GitHub Pages) y pon su enlace en Play Console y en `admob.properties` → `privacyPolicyUrl`.
    - **Liberar RAM:** Google podría considerar que llenar la memoria para que Android cierre otras apps es «interferir con otras apps», según su política de abuso del dispositivo. Si lo rechaza, se puede dejar solo el refuerzo de Android 13 o inferior.
 5. **Revisa el `applicationId`** (`com.ikeralvaro.phonecleaner`) antes de la primera subida, porque después no se puede cambiar.
+
+## Monetización
+
+La app tiene dos fuentes de ingresos:
+
+| Fuente | Dónde | Detalle |
+|---|---|---|
+| **Anuncios nativos** | Inicio (bajo «Herramientas») y las pantallas de resultado: limpieza, RAM y compresión | Una tarjeta con el estilo de la app y la etiqueta «Anuncio». En los resultados lleva imagen o vídeo. |
+| **Anuncio a pantalla completa** | Al salir de una pantalla de resultado | Nunca en la primera tarea, como mínimo 3 minutos entre anuncios y como mucho 6 al día (`AdFrequencyPolicy`). |
+| **Quitar anuncios** | Ajustes | Compra única con Google Play Billing (producto `remove_ads`). |
+
+Nunca hay anuncios al abrir la app, durante un análisis o limpieza, encima de botones ni fuera de la app. Así se cumplen las políticas de anuncios de AdMob y de Google Play.
+
+### Ponerlo en marcha
+
+1. **Crea una cuenta en [AdMob](https://admob.google.com)** y registra la app (Android, `com.ikeralvaro.phonecleaner`). Crea dos bloques de anuncios: **Nativo avanzado** e **Intersticial**.
+2. **Crea `admob.properties`** en la raíz del proyecto. Ya está en `.gitignore`:
+   ```properties
+   appId=ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY
+   nativeUnitId=ca-app-pub-XXXXXXXXXXXXXXXX/1111111111
+   interstitialUnitId=ca-app-pub-XXXXXXXXXXXXXXXX/2222222222
+   privacyPolicyUrl=https://tu-usuario.github.io/Phone-Cleaner/PRIVACY
+   ```
+   - La versión de depuración usa **siempre** los anuncios de prueba de Google («Test Ad»).
+   - Si falta este archivo, la versión release también los usa, y la compilación lo avisa.
+3. **Configura el consentimiento.** En AdMob → **Privacidad y mensajes**, crea el mensaje de RGPD (para la Unión Europea y Reino Unido). La app ya lo muestra con la plataforma UMP de Google y tiene «Privacidad de los anuncios» en Ajustes.
+4. **Publica `app-ads.txt`** en la web de desarrollador que pongas en Play Console. Sin él, AdMob limita los anuncios.
+5. **Crea el producto en Play Console.** Ve a Monetizar → Productos → Productos de compra única, crea el producto `remove_ads` con el precio que quieras (por ejemplo 2,99 €) y actívalo. Para probarlo sin pagar, añade tu cuenta en **Configuración → Pruebas de licencia**.
+6. **Nunca pulses tus propios anuncios reales.** AdMob puede suspender la cuenta. Para probar, usa la versión de depuración.
+
+**Verificación de la compra.** No hay servidor propio, así que la compra se comprueba en el móvil al arrancar (`queryPurchasesAsync`). También detecta los reembolsos. Si más adelante quieres más seguridad, puedes verificar los tokens con la Google Play Developer API desde un servidor.
+
+### Qué esperar en ingresos
+
+Lo que más influye es el **número de usuarios activos al día**, no el número de anuncios. Cifras orientativas por cada 1000 impresiones en España:
+- anuncio nativo: 0,50–2 €;
+- anuncio a pantalla completa: 2–8 €.
+
+Por ejemplo, con 1000 usuarios diarios que vean unos 3 nativos y 1 pantalla completa, salen unos 5–15 € al día. Con pocos usuarios, serán céntimos. Para ganar más, lo eficaz es conseguir instalaciones y buenas valoraciones; poner más anuncios no ayuda.
 
 ## Lista de pruebas en un móvil real
 
@@ -110,6 +160,11 @@ Datos técnicos:
 - [ ] Al comprimir un vídeo, se ve igual y ocupa menos.
 - [ ] Cambiar entre tema claro y oscuro funciona, y el modo «según el sistema» sigue al móvil.
 - [ ] Con el móvil en inglés, la app aparece en inglés.
+- [ ] Anuncios en la versión de depuración, que solo usa anuncios de prueba:
+  - aparece el formulario de consentimiento (si estás en la UE);
+  - en Inicio y en «¡Listo!» se ve una tarjeta «Test Ad»;
+  - al salir de una segunda limpieza (o pasados 3 minutos) aparece la pantalla completa.
+- [ ] La compra de prueba de «Quitar anuncios» (con una cuenta de pruebas de licencia) quita todos los anuncios. Al reinstalar la app, la compra se recupera.
 
 ## Estructura
 
