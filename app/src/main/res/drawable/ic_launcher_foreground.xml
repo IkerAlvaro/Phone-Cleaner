@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Hoja -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,74 C35,52 47,37 76,33 C77,58 65,74 43,77 C41,77.3 39.3,76.4 38,74 Z" />
+    <!-- Nervio central -->
+    <path
+        android:pathData="M42,72 L69,41"
+        android:strokeWidth="3"
+        android:strokeColor="#16A34A"
+        android:strokeLineCap="round" />
+    <!-- Tallo -->
+    <path
+        android:pathData="M33,80 L41,72"
+        android:strokeWidth="4.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+    <!-- Destello de limpieza -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,30 Q35,37 42,38 Q35,39 34,46 Q33,39 26,38 Q33,37 34,30 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M77,64 Q77.6,68.4 82,69 Q77.6,69.6 77,74 Q76.4,69.6 72,69 Q76.4,68.4 77,64 Z" />
+</vector>
