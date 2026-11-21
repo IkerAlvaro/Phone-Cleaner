@@ -42,6 +42,7 @@ class PermissionManager(private val context: Context) {
     fun hasUsageAccess(): Boolean {
         val appOps = context.getSystemService(AppOpsManager::class.java)
         val mode = if (Build.VERSION.SDK_INT >= 29) {
+            @Suppress("DEPRECATION")
             appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
         } else {
             @Suppress("DEPRECATION")
@@ -54,7 +55,7 @@ class PermissionManager(private val context: Context) {
         }
     }
 
-    fun hasMediaAccess(): Boolean = hasAllFilesAccess() || mediaPermissions().all(::granted)
+    fun hasMediaAccess(): Boolean = hasAllFilesAccess() || mediaReadPermissions().all(::granted)
 
     fun hasNotifications(): Boolean = if (Build.VERSION.SDK_INT >= 33) {
         granted(Manifest.permission.POST_NOTIFICATIONS)
@@ -68,10 +69,14 @@ class PermissionManager(private val context: Context) {
         Manifest.permission.WRITE_EXTERNAL_STORAGE,
     )
 
-    fun mediaPermissions(): Array<String> = when {
+    private fun mediaReadPermissions(): Array<String> = when {
         Build.VERSION.SDK_INT >= 33 -> arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.READ_MEDIA_VIDEO)
         else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
     }
+
+    /** Permisos a pedir para fotos y vídeos; en Android 10+ se añade la ubicación de las fotos (para conservar el GPS). */
+    fun mediaPermissions(): Array<String> =
+        if (Build.VERSION.SDK_INT >= 29) mediaReadPermissions() + Manifest.permission.ACCESS_MEDIA_LOCATION else mediaReadPermissions()
 
     /** Pantalla de Ajustes para conceder "acceso a todos los archivos" (Android 11+). */
     fun allFilesAccessIntent(): Intent? {

@@ -13,6 +13,13 @@ import com.ikeralvaro.phonecleaner.core.system.CpuReader
 import com.ikeralvaro.phonecleaner.core.system.MemoryReader
 import com.ikeralvaro.phonecleaner.core.system.StorageReader
 import com.ikeralvaro.phonecleaner.core.system.ThermalReader
+import com.ikeralvaro.phonecleaner.feature.apps.AppRepository
+import com.ikeralvaro.phonecleaner.feature.boost.RamBooster
+import com.ikeralvaro.phonecleaner.feature.cleaner.JunkScanner
+import com.ikeralvaro.phonecleaner.feature.compress.MediaSaver
+import com.ikeralvaro.phonecleaner.feature.compress.PhotoCompressor
+import com.ikeralvaro.phonecleaner.feature.compress.VideoCompressor
+import com.ikeralvaro.phonecleaner.feature.media.MediaRepository
 import com.ikeralvaro.phonecleaner.feature.settings.SettingsRepository
 
 /** Inyección de dependencias manual: un único contenedor por proceso. */
@@ -25,6 +32,13 @@ class AppContainer(context: Context) {
     val batteryReader = BatteryReader(appContext)
     val cpuReader = CpuReader()
     val thermalReader = ThermalReader(appContext)
+    val appRepository = AppRepository(appContext, permissionManager)
+    val junkScanner = JunkScanner(appContext, appRepository)
+    val ramBooster = RamBooster(appContext, appRepository, memoryReader)
+    val mediaRepository = MediaRepository(appContext, permissionManager)
+    private val mediaSaver = MediaSaver(appContext)
+    val photoCompressor = PhotoCompressor(appContext, mediaSaver)
+    val videoCompressor = VideoCompressor(appContext, mediaSaver)
 }
 
 val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("AppContainer no disponible") }

@@ -49,6 +49,7 @@
     <string name="cleaner_title">Limpieza rápida</string>
     <string name="cleaner_scanning">Analizando…</string>
     <string name="cleaner_found">%1$s encontrados</string>
+    <string name="cleaner_found_label">encontrados</string>
     <string name="cleaner_clean_button">Limpiar %1$s</string>
     <string name="cleaner_nothing_selected">Selecciona algo para limpiar</string>
     <string name="cleaner_cleaning">Limpiando…</string>
@@ -92,6 +93,7 @@
     <string name="boost_result_none">La memoria ya estaba optimizada</string>
     <string name="boost_needs_usage">Concede el acceso de uso para ver qué apps has usado recientemente.</string>
     <string name="boost_working">Liberando memoria…</string>
+    <string name="quick_stop_progress">Deteniendo %1$d de %2$d: %3$s</string>
     <string name="boost_quick_stop_done">Detención rápida terminada</string>
     <string name="apps_title">Apps</string>
     <string name="apps_sort_size">Tamaño</string>

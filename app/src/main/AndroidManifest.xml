@@ -16,6 +16,8 @@
     <!-- Fotos duplicadas/similares y compresión cuando no hay acceso a todos los archivos. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- Conservar la ubicación GPS de las fotos al comprimirlas (Android 10+). -->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!-- Tamaño, caché y uso de cada app. Se concede en Ajustes > Acceso de uso. -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -52,6 +54,7 @@
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:largeHeap="true"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"

@@ -157,7 +157,7 @@ app/src/main/java/com/ikeralvaro/phonecleaner/
   - solo se guarda el resultado si ahorra al menos un 10 %.
 - **Vídeos:**
   - se transcodifican con Media3 `Transformer` a H.265/HEVC si el codificador del móvil lo soporta; si no, a H.264;
-  - el bitrate objetivo depende de la resolución (unos 6 Mbps en 1080p30 y unos 20 Mbps en 4K) y nunca pasa del 70 % del original;
+  - el bitrate objetivo es el que mantiene la calidad para su resolución (unos 5 Mbps en 1080p30 y 16 Mbps en 4K con HEVC); si eso no ahorra al menos un 15 %, el vídeo no se toca;
   - el audio se copia tal cual;
   - el resultado se descarta si no ahorra al menos un 15 %.
 - Antes de comprimir se muestra el ahorro estimado. El original va a la papelera del sistema (en Android 11 o superior); en Android 8 a 10 se conservan las dos copias, salvo que el usuario elija lo contrario.
