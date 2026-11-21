@@ -245,6 +245,13 @@
     <string name="ads_privacy">Ad privacy</string>
     <string name="ads_privacy_desc">Change your consent for personalised ads</string>
     <string name="privacy_policy">Privacy policy</string>
+    <string name="home_greeting">Your phone, like new</string>
+    <string name="tip_of_day">Tip of the day</string>
+    <string name="daily_tip_1">Apps that start by themselves drain battery even if you don\'t open them. Check them in Battery.</string>
+    <string name="daily_tip_2">Old screenshots often take a lot of space. Check them in Photos and files.</string>
+    <string name="daily_tip_3">Compressing large videos can save gigabytes with no visible difference.</string>
+    <string name="daily_tip_4">A hot phone uses more battery: close background apps if it heats up.</string>
+    <string name="daily_tip_5">Dark mode saves battery on OLED screens.</string>
     <plurals name="items_count">
         <item quantity="one">%d item</item>
         <item quantity="other">%d items</item>

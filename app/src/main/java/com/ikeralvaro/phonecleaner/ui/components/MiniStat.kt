@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
 
 /** Tarjeta pequeña con icono, etiqueta, valor y barra opcional. */
 @Composable
@@ -58,8 +60,8 @@ fun MiniStat(
         }
     }
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier, shape = MaterialTheme.shapes.medium, colors = colors) { content() }
+        Card(onClick = onClick, modifier = modifier, shape = MaterialTheme.shapes.medium, colors = colors, border = BorderStroke(1.dp, cardBorderColor())) { content() }
     } else {
-        Card(modifier = modifier, shape = MaterialTheme.shapes.medium, colors = colors) { content() }
+        Card(modifier = modifier, shape = MaterialTheme.shapes.medium, colors = colors, border = BorderStroke(1.dp, cardBorderColor())) { content() }
     }
 }

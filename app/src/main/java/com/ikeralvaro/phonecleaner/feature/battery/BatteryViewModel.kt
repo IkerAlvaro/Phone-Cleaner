@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.battery
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+@Immutable
 data class BatteryUiState(
     val battery: BatterySnapshot? = null,
     /** Apps de usuario que arrancan solas al encender el móvil (pueden gastar batería sin abrirlas). */

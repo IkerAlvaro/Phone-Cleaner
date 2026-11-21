@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.apps
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+@Immutable
 data class AppsUiState(
     val loading: Boolean = true,
     val apps: List<AppEntry> = emptyList(),

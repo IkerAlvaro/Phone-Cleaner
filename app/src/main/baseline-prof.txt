@@ -1,0 +1,19 @@
+# Perfil de arranque escrito a mano (rutas calientes al abrir la app e ir a Inicio).
+# Regenerarlo con un módulo Macrobenchmark en un dispositivo real mejora aún más el arranque.
+HSPLcom/ikeralvaro/phonecleaner/PhoneCleanerApp;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/MainActivity;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/AppContainer;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/feature/settings/SettingsRepository**;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/feature/home/**;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/ui/**;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/core/system/**;->**(**)**
+Lcom/ikeralvaro/phonecleaner/**;
+HSPLandroidx/compose/runtime/**;->**(**)**
+HSPLandroidx/compose/ui/**;->**(**)**
+HSPLandroidx/compose/foundation/**;->**(**)**
+HSPLandroidx/compose/material3/**;->**(**)**
+HSPLandroidx/compose/animation/**;->**(**)**
+HSPLandroidx/navigation/**;->**(**)**
+HSPLandroidx/lifecycle/**;->**(**)**
+HSPLandroidx/datastore/**;->**(**)**
+HSPLkotlinx/coroutines/**;->**(**)**

@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.compress
 
+import androidx.compose.runtime.Immutable
 import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
@@ -40,6 +41,7 @@ data class CompressRun(
     val originalsTrashed: Boolean = false,
 )
 
+@Immutable
 data class CompressUiState(
     val loading: Boolean = true,
     val hasAccess: Boolean = true,

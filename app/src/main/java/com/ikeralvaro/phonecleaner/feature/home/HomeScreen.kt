@@ -1,5 +1,19 @@
 package com.ikeralvaro.phonecleaner.feature.home
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.rounded.Lightbulb
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import com.ikeralvaro.phonecleaner.core.util.DAY_MS
+import com.ikeralvaro.phonecleaner.ui.components.IconBadge
+import com.ikeralvaro.phonecleaner.ui.components.SectionCard
+import com.ikeralvaro.phonecleaner.ui.theme.brandGradient
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -24,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -75,26 +90,15 @@ fun HomeContent(
     onSettings: () -> Unit,
     now: Long = System.currentTimeMillis(),
 ) {
-    Scaffold(
-        topBar = {
-            PhoneCleanerTopBar(
-                title = stringResource(R.string.app_name),
-                actions = {
-                    IconButton(onClick = onSettings) {
-                        Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.action_settings))
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-        ) {
-            StorageHero(state)
+    // Surface: da el color de texto correcto (onBackground) en claro y en oscuro.
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+    ) {
+        HomeHeader(state, onSettings)
+        Column(Modifier.padding(horizontal = 16.dp)) {
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val memory = state.memory
@@ -118,7 +122,7 @@ fun HomeContent(
                     onClick = { onTool(HomeTool.BATTERY) },
                 )
             }
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
             BigActionButton(
                 text = stringResource(R.string.home_quick_scan),
                 onClick = onQuickScan,
@@ -127,6 +131,8 @@ fun HomeContent(
             Spacer(Modifier.height(20.dp))
             SectionHeader(stringResource(R.string.home_tools))
             ToolGrid(onTool)
+            Spacer(Modifier.height(16.dp))
+            TipCard(now)
             Spacer(Modifier.height(16.dp))
             NativeAdCard(AdPlacement.HOME)
             Spacer(Modifier.height(16.dp))
@@ -140,23 +146,55 @@ fun HomeContent(
             Spacer(Modifier.height(24.dp))
         }
     }
+    }
 }
 
+/** Cabecera con el degradado del logo: logo, nombre y medidor de almacenamiento en blanco. */
 @Composable
-private fun StorageHero(state: HomeUiState) {
+private fun HomeHeader(state: HomeUiState, onSettings: () -> Unit) {
     val storage = state.storage
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        UsageRing(progress = storage?.usedFraction ?: 0f, size = 220.dp, strokeWidth = 18.dp) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
+            .background(brandGradient())
+            .statusBarsPadding()
+            .padding(start = 20.dp, end = 8.dp, bottom = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(R.drawable.app_logo), contentDescription = null, modifier = Modifier.size(40.dp))
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, color = Color.White)
+                Text(
+                    stringResource(R.string.home_greeting),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.85f),
+                )
+            }
+            IconButton(onClick = onSettings) {
+                Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.action_settings), tint = Color.White)
+            }
+        }
+        Spacer(Modifier.height(12.dp))
+        UsageRing(
+            progress = storage?.usedFraction ?: 0f,
+            size = 200.dp,
+            strokeWidth = 16.dp,
+            color = Color.White,
+            trackColor = Color.White.copy(alpha = 0.22f),
+        ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = storage?.let { "${(it.usedFraction * 100).roundToInt()} %" } ?: "—",
                     style = MaterialTheme.typography.displayMedium,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = Color.White,
                 )
                 Text(
                     stringResource(R.string.home_storage_label),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = Color.White.copy(alpha = 0.85f),
                 )
             }
         }
@@ -164,6 +202,7 @@ private fun StorageHero(state: HomeUiState) {
             Text(
                 stringResource(R.string.home_storage_used, formatBytes(storage.usedBytes), formatBytes(storage.totalBytes)),
                 style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
             )
         }
     }
@@ -179,9 +218,9 @@ private fun ToolGrid(onTool: (HomeTool) -> Unit) {
         Triple(HomeTool.APPS, Icons.Rounded.Apps, R.string.tool_apps to R.string.tool_apps_desc),
         Triple(HomeTool.FILES, Icons.Rounded.PhotoLibrary, R.string.tool_files to R.string.tool_files_desc),
     )
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        tools.chunked(2).forEach { row ->
-            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        tools.chunked(3).forEach { row ->
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { (tool, icon, texts) ->
                     FeatureTile(
                         icon = icon,
@@ -193,6 +232,25 @@ private fun ToolGrid(onTool: (HomeTool) -> Unit) {
                             .fillMaxHeight(),
                     )
                 }
+            }
+        }
+    }
+}
+
+private val DAILY_TIPS = listOf(
+    R.string.daily_tip_1, R.string.daily_tip_2, R.string.daily_tip_3, R.string.daily_tip_4, R.string.daily_tip_5,
+)
+
+@Composable
+private fun TipCard(now: Long) {
+    val tip = DAILY_TIPS[((now / DAY_MS) % DAILY_TIPS.size).toInt()]
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconBadge(Icons.Rounded.Lightbulb)
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(stringResource(R.string.tip_of_day), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(tip), style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

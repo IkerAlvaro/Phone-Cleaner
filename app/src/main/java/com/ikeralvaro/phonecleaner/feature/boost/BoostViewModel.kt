@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.boost
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
@@ -15,6 +16,7 @@ import kotlinx.coroutines.withContext
 
 enum class BoostPhase { IDLE, RUNNING, DONE }
 
+@Immutable
 data class BoostUiState(
     val phase: BoostPhase = BoostPhase.IDLE,
     val memory: MemorySnapshot? = null,

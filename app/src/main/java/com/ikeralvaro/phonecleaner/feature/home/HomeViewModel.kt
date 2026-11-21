@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.home
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+@Immutable
 data class HomeUiState(
     val storage: StorageSnapshot? = null,
     val memory: MemorySnapshot? = null,

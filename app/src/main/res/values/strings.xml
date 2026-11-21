@@ -246,6 +246,13 @@
     <string name="ads_privacy">Privacidad de los anuncios</string>
     <string name="ads_privacy_desc">Cambia tu consentimiento para los anuncios personalizados</string>
     <string name="privacy_policy">Política de privacidad</string>
+    <string name="home_greeting">Tu móvil, como nuevo</string>
+    <string name="tip_of_day">Consejo del día</string>
+    <string name="daily_tip_1">Las apps que se inician solas gastan batería aunque no las abras. Revísalas en Batería.</string>
+    <string name="daily_tip_2">Las capturas de pantalla antiguas suelen ocupar mucho. Míralas en Fotos y archivos.</string>
+    <string name="daily_tip_3">Comprimir los vídeos grandes puede ahorrar gigas sin que se note la diferencia.</string>
+    <string name="daily_tip_4">Un móvil caliente gasta más batería: cierra apps en segundo plano si se calienta.</string>
+    <string name="daily_tip_5">El modo oscuro ahorra batería en pantallas OLED.</string>
     <plurals name="items_count">
         <item quantity="one">%d elemento</item>
         <item quantity="other">%d elementos</item>

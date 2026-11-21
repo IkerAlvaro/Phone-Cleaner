@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.cleaner
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
@@ -22,6 +23,7 @@ data class JunkGroup(val category: JunkCategory, val items: List<JunkItem>) {
 /** Resultado de "Vaciar caché de todas las apps": lo liberado se mide con el espacio libre antes y después. */
 data class AppCacheState(val freedBytes: Long? = null)
 
+@Immutable
 data class CleanerUiState(
     val phase: CleanerPhase = CleanerPhase.IDLE,
     val progress: ScanProgress? = null,

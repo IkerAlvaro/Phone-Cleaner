@@ -35,7 +35,7 @@ sealed interface DeleteRequest {
 
 class MediaRepository(private val context: Context, private val permissions: PermissionManager) {
     private val resolver = context.contentResolver
-    private val hashCache = HashMap<Long, Pair<Long, Long>>() // id -> (tamaño, dHash)
+    private val hashCache = java.util.concurrent.ConcurrentHashMap<Long, Pair<Long, Long>>() // id -> (tamaño, dHash)
 
     suspend fun images(): List<MediaItem> = query(imagesCollection(), "image/*")
 

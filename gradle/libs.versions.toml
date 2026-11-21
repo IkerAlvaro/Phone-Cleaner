@@ -21,6 +21,7 @@ roborazzi = "1.77.0"
 playServicesAds = "25.5.0"
 ump = "4.0.0"
 billing = "9.1.0"
+profileinstaller = "1.4.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,6 +51,7 @@ coil-video = { group = "io.coil-kt.coil3", name = "coil-video", version.ref = "c
 coil-test = { group = "io.coil-kt.coil3", name = "coil-test", version.ref = "coil" }
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
 ump = { group = "com.google.android.ump", name = "user-messaging-platform", version.ref = "ump" }
+androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }

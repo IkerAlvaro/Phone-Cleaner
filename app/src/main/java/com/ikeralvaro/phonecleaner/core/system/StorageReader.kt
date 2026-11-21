@@ -2,6 +2,7 @@ package com.ikeralvaro.phonecleaner.core.system
 
 import android.app.usage.StorageStatsManager
 import android.content.Context
+import android.os.Build
 import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
@@ -15,7 +16,7 @@ data class StorageSnapshot(val totalBytes: Long, val freeBytes: Long) {
 
 class StorageReader(private val context: Context) {
     /** Lee el almacenamiento interno. Llamar fuera del hilo principal. */
-    fun read(): StorageSnapshot = try {
+    fun read(): StorageSnapshot = if (Build.VERSION.SDK_INT < 26) statFs() else try {
         val stats = context.getSystemService(StorageStatsManager::class.java)
         StorageSnapshot(
             totalBytes = stats.getTotalBytes(StorageManager.UUID_DEFAULT),

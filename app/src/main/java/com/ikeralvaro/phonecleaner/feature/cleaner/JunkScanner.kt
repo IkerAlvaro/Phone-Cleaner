@@ -140,7 +140,12 @@ class JunkScanner(
     }
 
     private fun isSymlink(file: File) = try {
-        Files.isSymbolicLink(file.toPath())
+        if (Build.VERSION.SDK_INT >= 26) {
+            Files.isSymbolicLink(file.toPath())
+        } else {
+            // Android 7: un enlace simbólico apunta a una ruta canónica distinta de la suya.
+            file.canonicalFile.name != file.name || file.canonicalFile.parent != file.parentFile?.canonicalPath
+        }
     } catch (_: Exception) {
         true
     }

@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.ikeralvaro.phonecleaner.MainActivity
 import com.ikeralvaro.phonecleaner.R
@@ -16,6 +17,7 @@ object Notifications {
     const val ID_REMINDER = 1002
 
     fun createChannels(context: Context) {
+        if (Build.VERSION.SDK_INT < 26) return // Android 7: no hay canales
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_COMPRESS, context.getString(R.string.channel_compress), NotificationManager.IMPORTANCE_LOW),

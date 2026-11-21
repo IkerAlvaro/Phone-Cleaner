@@ -1,6 +1,18 @@
 package com.ikeralvaro.phonecleaner.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.dp
+import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
@@ -78,6 +90,10 @@ fun PhoneCleanerRoot(showOnboarding: Boolean) {
             modifier = Modifier
                 .padding(padding)
                 .consumeWindowInsets(padding),
+            enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(260)) { it / 12 } },
+            exitTransition = { fadeOut(tween(160)) },
+            popEnterTransition = { fadeIn(tween(220)) },
+            popExitTransition = { fadeOut(tween(160)) + slideOutHorizontally(tween(260)) { it / 12 } },
         ) {
             composable(Routes.ONBOARDING) {
                 OnboardingScreen(onFinished = {
@@ -159,7 +175,17 @@ fun PhoneCleanerRoot(showOnboarding: Boolean) {
 
 @Composable
 private fun BottomBar(navController: NavHostController, currentRoute: String?) {
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
+    // Barra tipo "píldora" flotante.
+    NavigationBar(
+        modifier = Modifier
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .border(1.dp, cardBorderColor(), RoundedCornerShape(28.dp)),
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 0.dp,
+        windowInsets = WindowInsets(0),
+    ) {
         TOP_LEVEL.forEach { item ->
             NavigationBarItem(
                 selected = currentRoute == item.route,

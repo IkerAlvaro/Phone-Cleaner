@@ -57,6 +57,17 @@ Además, Android 15 marca como **«ajuste restringido»** varios permisos cuando
 
 La visibilidad de otras apps se limita a las que tienen icono (`<queries>`). La app no usa `QUERY_ALL_PACKAGES`.
 
+## Logo e iconos
+
+El logo original está en `tools/logo_source.png`. El script `python3 tools/make_icon.py` genera a partir de él:
+- el icono adaptativo, con un fondo de degradado vectorial y la hoja separada en primer plano;
+- el icono monocromo, para los iconos temáticos;
+- los iconos clásicos para Android 7;
+- el logo que se ve dentro de la app;
+- `docs/play-store-icon-512.png`, el icono para Google Play.
+
+Todo sale en WebP.
+
 ## Compilar e instalar
 
 Requisitos: JDK 17 o superior y el SDK de Android con la plataforma 37.
@@ -73,7 +84,7 @@ Para instalar el APK en tu móvil, cópialo al teléfono y ábrelo (tendrás que
 Datos técnicos:
 
 - Kotlin y Jetpack Compose con Material 3.
-- minSdk 26 (Android 8), targetSdk 36 y compileSdk 37.
+- minSdk 24 (Android 7.0), targetSdk 36 y compileSdk 37. No se puede bajar de 24 porque Navigation Compose lo exige. En Android 7, «Liberar RAM» usa `killBackgroundProcesses`, que en esa versión sí cierra otras apps.
 - R8 activado en la versión release, que pesa unos 2 MB.
 
 ## Publicar en Google Play

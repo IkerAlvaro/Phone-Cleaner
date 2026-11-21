@@ -140,13 +140,9 @@ fun OnboardingContent(
 
 @Composable
 private fun Logo() {
-    Box(
-        Modifier
-            .size(132.dp)
-            .clip(RoundedCornerShape(36.dp))
-            .background(MaterialTheme.colorScheme.primary),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(painterResource(R.drawable.ic_launcher_foreground), contentDescription = null, modifier = Modifier.size(132.dp))
-    }
+    Image(
+        painterResource(R.drawable.app_logo),
+        contentDescription = null,
+        modifier = Modifier.size(148.dp),
+    )
 }

@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,9 +35,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ikeralvaro.phonecleaner.R
+import com.ikeralvaro.phonecleaner.ui.theme.buttonGradient
+import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
 
 /** Tarjeta base: verde muy claro en modo claro, casi negra en oscuro. */
 @Composable
@@ -56,10 +60,11 @@ fun SectionCard(
             content()
         }
     }
+    val border = BorderStroke(1.dp, cardBorderColor())
     if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = colors, content = body)
+        Card(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = colors, border = border, content = body)
     } else {
-        Card(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = colors, content = body)
+        Card(modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, colors = colors, border = border, content = body)
     }
 }
 
@@ -82,7 +87,7 @@ fun IconBadge(
     }
 }
 
-/** Acceso a una herramienta en la cuadrícula de Inicio. */
+/** Acceso a una herramienta en la cuadrícula de Inicio (3 columnas). */
 @Composable
 fun FeatureTile(
     icon: ImageVector,
@@ -93,20 +98,42 @@ fun FeatureTile(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 128.dp),
+        modifier = modifier,
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, cardBorderColor()),
     ) {
-        Column(Modifier.padding(16.dp)) {
-            IconBadge(icon)
-            Spacer(Modifier.height(12.dp))
-            Text(title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                Modifier
+                    .size(48.dp)
+                    .clip(MaterialTheme.shapes.small)
+                    .background(buttonGradient()),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                title,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
             Text(
                 subtitle,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
+                minLines = 2,
                 overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -204,7 +231,7 @@ fun PermissionCard(
     }
 }
 
-/** Botón principal grande y verde. */
+/** Botón principal grande con el degradado verde del logo. */
 @Composable
 fun BigActionButton(
     text: String,
@@ -213,14 +240,20 @@ fun BigActionButton(
     enabled: Boolean = true,
     icon: ImageVector? = null,
 ) {
+    val shape = MaterialTheme.shapes.extraLarge
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = ButtonDefaults.buttonColors(),
+            .height(56.dp)
+            .clip(shape)
+            .then(if (enabled) Modifier.background(buttonGradient(), shape) else Modifier),
+        shape = shape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = Color.White,
+        ),
     ) {
         if (icon != null) {
             Icon(icon, contentDescription = null)

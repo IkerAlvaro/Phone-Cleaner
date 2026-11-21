@@ -1,10 +1,14 @@
 package com.ikeralvaro.phonecleaner.feature.media
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +18,7 @@ import kotlinx.coroutines.withContext
 
 enum class MediaPhase { IDLE, NO_ACCESS, ANALYZING, READY }
 
+@Immutable
 data class MediaUiState(
     val phase: MediaPhase = MediaPhase.IDLE,
     val progress: Float = 0f,
@@ -79,12 +84,19 @@ class MediaViewModel(private val container: AppContainer) : ViewModel() {
                 val candidates = images
                     .filter { !DuplicateFinder.isScreenshot(it) && it.id !in removableExact && it.mimeType != "image/gif" }
                     .take(MAX_SIMILAR_CANDIDATES)
-                val hashes = HashMap<Long, Long>()
-                candidates.forEachIndexed { index, item ->
-                    repo.perceptualHash(item)?.let { hashes[item.id] = it }
-                    if (index % 25 == 0) {
-                        _state.update { it.copy(progress = 0.1f + 0.9f * index / candidates.size.coerceAtLeast(1)) }
-                    }
+                // Miniaturas y hashes en paralelo (4 a la vez): mucho más rápido en galerías grandes.
+                val hashes = java.util.concurrent.ConcurrentHashMap<Long, Long>()
+                val done = java.util.concurrent.atomic.AtomicInteger()
+                val total = candidates.size.coerceAtLeast(1)
+                val pool = Dispatchers.IO.limitedParallelism(4)
+                coroutineScope {
+                    candidates.map { item ->
+                        async(pool) {
+                            repo.perceptualHash(item)?.let { hashes[item.id] = it }
+                            val n = done.incrementAndGet()
+                            if (n % 25 == 0) _state.update { it.copy(progress = 0.1f + 0.9f * n / total) }
+                        }
+                    }.awaitAll()
                 }
                 MediaUiState(
                     phase = MediaPhase.READY,

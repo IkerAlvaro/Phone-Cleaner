@@ -43,6 +43,7 @@ class MemoryPressureBooster(
 ) {
     suspend fun boost(onProgress: (BoostProgress) -> Unit): BoostResult = withContext(Dispatchers.Default) {
         val before = memory.read()
+        if (Build.VERSION.SDK_INT < 26) return@withContext legacyBoost(before, onProgress)
         val warning = AtomicBoolean(false)
         val callbacks = object : ComponentCallbacks2 {
             // RUNNING_LOW/CRITICAL: el sistema va justo. UI_HIDDEN o más: el usuario ha salido de la app.
@@ -116,6 +117,24 @@ class MemoryPressureBooster(
         }
         val after = memory.read()
         BoostResult((after.availableBytes - before.availableBytes).coerceAtLeast(0L), reason, allocated)
+    }
+
+    /**
+     * Android 7: los píxeles de un Bitmap aún van al heap de Java (no se puede llenar la memoria del sistema),
+     * pero killBackgroundProcesses sí cierra las apps en segundo plano de cualquier app.
+     */
+    private suspend fun legacyBoost(
+        before: com.ikeralvaro.phonecleaner.core.system.MemorySnapshot,
+        onProgress: (BoostProgress) -> Unit,
+    ): BoostResult {
+        onProgress(BoostProgress(BoostStage.HOLDING, before.usedFraction, 0L))
+        stopBackgroundProcesses()
+        repeat(MEASURE_STEPS) {
+            delay(MEASURE_STEP_MS)
+            onProgress(BoostProgress(BoostStage.MEASURING, memory.read().usedFraction, 0L))
+        }
+        val after = memory.read()
+        return BoostResult((after.availableBytes - before.availableBytes).coerceAtLeast(0L), StopReason.NONE, 0L)
     }
 
     private suspend fun stopBackgroundProcesses() {

@@ -26,25 +26,26 @@ import com.ikeralvaro.phonecleaner.feature.media.MediaRepository
 import com.ikeralvaro.phonecleaner.feature.settings.SettingsRepository
 
 /** Inyección de dependencias manual: un único contenedor por proceso. */
+/** Inyección de dependencias manual. Todo es perezoso: se crea al usarse por primera vez (arranque rápido). */
 class AppContainer(context: Context) {
     val appContext: Context = context.applicationContext
-    val settingsRepository = SettingsRepository(appContext)
-    val permissionManager = PermissionManager(appContext)
-    val memoryReader = MemoryReader(appContext)
-    val storageReader = StorageReader(appContext)
-    val batteryReader = BatteryReader(appContext)
-    val cpuReader = CpuReader()
-    val thermalReader = ThermalReader(appContext)
-    val appRepository = AppRepository(appContext)
-    val junkScanner = JunkScanner(appContext, appRepository)
-    val memoryBooster = MemoryPressureBooster(appContext, memoryReader, appRepository)
-    val mediaRepository = MediaRepository(appContext, permissionManager)
-    private val mediaSaver = MediaSaver(appContext)
-    val photoCompressor = PhotoCompressor(appContext, mediaSaver)
-    val videoCompressor = VideoCompressor(appContext, mediaSaver)
-    val consentManager = ConsentManager(appContext)
-    val adsManager = AdsManager(appContext, settingsRepository, consentManager)
-    val billingManager = BillingManager(appContext, settingsRepository)
+    val settingsRepository by lazy { SettingsRepository(appContext) }
+    val permissionManager by lazy { PermissionManager(appContext) }
+    val memoryReader by lazy { MemoryReader(appContext) }
+    val storageReader by lazy { StorageReader(appContext) }
+    val batteryReader by lazy { BatteryReader(appContext) }
+    val cpuReader by lazy { CpuReader() }
+    val thermalReader by lazy { ThermalReader(appContext) }
+    val appRepository by lazy { AppRepository(appContext) }
+    val junkScanner by lazy { JunkScanner(appContext, appRepository) }
+    val memoryBooster by lazy { MemoryPressureBooster(appContext, memoryReader, appRepository) }
+    val mediaRepository by lazy { MediaRepository(appContext, permissionManager) }
+    private val mediaSaver by lazy { MediaSaver(appContext) }
+    val photoCompressor by lazy { PhotoCompressor(appContext, mediaSaver) }
+    val videoCompressor by lazy { VideoCompressor(appContext, mediaSaver) }
+    val consentManager by lazy { ConsentManager(appContext) }
+    val adsManager by lazy { AdsManager(appContext, settingsRepository, consentManager) }
+    val billingManager by lazy { BillingManager(appContext, settingsRepository) }
 }
 
 val LocalAppContainer = staticCompositionLocalOf<AppContainer> { error("AppContainer no disponible") }

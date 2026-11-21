@@ -66,6 +66,8 @@ fun rememberPermissionActions(onChanged: () -> Unit = {}): PermissionActions {
             requestNotifications = {
                 if (Build.VERSION.SDK_INT >= 33) {
                     runtimeLauncher.launch(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS))
+                } else if (Build.VERSION.SDK_INT < 26) {
+                    context.startSafely(manager.appDetailsIntent())
                 } else {
                     context.startSafely(
                         Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)

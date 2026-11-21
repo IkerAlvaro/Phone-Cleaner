@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.monitor
 
+import androidx.compose.runtime.Immutable
 import android.os.Build
 import android.os.SystemClock
 import androidx.lifecycle.ViewModel
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.stateIn
 
 data class DeviceInfo(val model: String, val androidVersion: String, val uptimeMs: Long)
 
+@Immutable
 data class MonitorUiState(
     val cpu: CpuSnapshot? = null,
     val thermal: ThermalSnapshot? = null,

@@ -27,7 +27,7 @@ android {
 
     defaultConfig {
         applicationId = "com.ikeralvaro.phonecleaner"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
@@ -128,6 +128,8 @@ dependencies {
     implementation(libs.play.services.ads)
     implementation(libs.ump)
     implementation(libs.billing.ktx)
+    // Instala el perfil de arranque (baseline-prof.txt): menos compilación JIT al abrir la app.
+    implementation(libs.androidx.profileinstaller)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

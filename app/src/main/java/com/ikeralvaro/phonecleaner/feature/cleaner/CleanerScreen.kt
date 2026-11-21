@@ -76,6 +76,7 @@ import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 import com.ikeralvaro.phonecleaner.ui.components.UsageRing
+import com.ikeralvaro.phonecleaner.ui.components.animatedCount
 
 @Composable
 fun CleanerScreen(autoStart: Boolean, onBack: () -> Unit) {
@@ -475,7 +476,7 @@ private fun DoneView(freedBytes: Long) {
         Text(stringResource(R.string.cleaner_done_title), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-            if (freedBytes > 0) stringResource(R.string.cleaner_done_freed, formatBytes(freedBytes)) else stringResource(R.string.cleaner_done_clean),
+            if (freedBytes > 0) stringResource(R.string.cleaner_done_freed, formatBytes(animatedCount(freedBytes))) else stringResource(R.string.cleaner_done_clean),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,
         )
