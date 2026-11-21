@@ -173,6 +173,15 @@ fun MediaReviewContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            state.lastDeletedBytes?.let { deleted ->
+                item(key = "deleted", span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        stringResource(R.string.files_deleted, formatBytes(deleted)),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
             val groups = state.groups(category)
             if (groups != null) {
                 groups.forEachIndexed { index, group ->

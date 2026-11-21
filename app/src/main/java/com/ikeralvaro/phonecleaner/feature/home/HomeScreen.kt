@@ -42,6 +42,8 @@ import com.ikeralvaro.phonecleaner.ui.components.MiniStat
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionHeader
 import com.ikeralvaro.phonecleaner.ui.components.UsageRing
+import com.ikeralvaro.phonecleaner.ui.components.currentLocale
+import com.ikeralvaro.phonecleaner.ui.components.formatCelsius
 import kotlin.math.roundToInt
 
 enum class HomeTool { CLEANER, BOOST, BATTERY, COMPRESS, APPS, FILES }
@@ -106,7 +108,7 @@ fun HomeContent(
                     icon = Icons.Rounded.BatteryChargingFull,
                     label = stringResource(R.string.home_battery),
                     value = battery?.let { "${it.levelPercent} %" } ?: "—",
-                    detail = battery?.temperatureC?.let { "%.1f °C".format(it) },
+                    detail = battery?.temperatureC?.let { formatCelsius(it, currentLocale()) },
                     progress = battery?.levelPercent?.div(100f),
                     modifier = Modifier.weight(1f),
                     onClick = { onTool(HomeTool.BATTERY) },

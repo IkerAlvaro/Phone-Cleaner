@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.exifinterface.media.ExifInterface
 import com.ikeralvaro.phonecleaner.feature.media.MediaItem
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +30,7 @@ class PhotoCompressor(private val context: Context, private val saver: MediaSave
     private val resolver = context.contentResolver
 
     suspend fun compress(item: MediaItem, mode: CompressionMode): CompressionOutcome = withContext(Dispatchers.IO) {
-        val uri = originalUri(Uri.parse(item.uri))
+        val uri = originalUri(item.uri.toUri())
         val temp = File(context.cacheDir, "compress/${item.id}.jpg").apply { parentFile?.mkdirs() }
         try {
             val bitmap = try {

@@ -12,6 +12,7 @@ import android.os.Build
 import android.provider.MediaStore
 import android.util.Size
 import androidx.core.graphics.scale
+import androidx.core.net.toUri
 import com.ikeralvaro.phonecleaner.core.permissions.PermissionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -60,7 +61,7 @@ class MediaRepository(private val context: Context, private val permissions: Per
 
     /** MD5 del contenido completo, para confirmar duplicados exactos. */
     fun md5(item: MediaItem): String? = try {
-        resolver.openInputStream(Uri.parse(item.uri))?.use { input ->
+        resolver.openInputStream(item.uri.toUri())?.use { input ->
             val digest = MessageDigest.getInstance("MD5")
             val buffer = ByteArray(64 * 1024)
             while (true) {
@@ -90,7 +91,7 @@ class MediaRepository(private val context: Context, private val permissions: Per
     }
 
     private fun thumbnail(item: MediaItem): Bitmap? = try {
-        val uri = Uri.parse(item.uri)
+        val uri = item.uri.toUri()
         if (Build.VERSION.SDK_INT >= 29) {
             resolver.loadThumbnail(uri, Size(64, 64), null)
         } else {
@@ -130,7 +131,7 @@ class MediaRepository(private val context: Context, private val permissions: Per
         }
         if (scanned.isNotEmpty()) MediaScannerConnection.scanFile(context, scanned.toTypedArray(), null, null)
         if (viaSystem.isNotEmpty() && Build.VERSION.SDK_INT >= 30) {
-            val uris = viaSystem.map { Uri.parse(it.uri) }
+            val uris = viaSystem.map { it.uri.toUri() }
             val pending = MediaStore.createTrashRequest(resolver, uris, true)
             DeleteRequest.NeedsConfirmation(pending.intentSender, viaSystem.map { it.id }.toSet(), freed)
         } else {

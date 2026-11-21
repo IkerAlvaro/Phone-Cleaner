@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -40,6 +41,8 @@ import com.ikeralvaro.phonecleaner.ui.components.LinearMeter
 import com.ikeralvaro.phonecleaner.ui.components.MiniStat
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
+import com.ikeralvaro.phonecleaner.ui.components.currentLocale
+import com.ikeralvaro.phonecleaner.ui.components.formatCelsius
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -94,7 +97,7 @@ fun MonitorContent(
                 icon = Icons.Rounded.BatteryChargingFull,
                 label = stringResource(R.string.battery_title),
                 value = battery?.let { "${it.levelPercent} %" } ?: "—",
-                detail = battery?.temperatureC?.let { String.format(Locale.getDefault(), "%.1f °C", it) },
+                detail = battery?.temperatureC?.let { formatCelsius(it, currentLocale()) },
                 progress = battery?.levelPercent?.div(100f),
                 onClick = onOpenBattery,
             )
@@ -120,7 +123,7 @@ private fun CpuCard(state: MonitorUiState) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.monitor_cpu), style = MaterialTheme.typography.titleMedium)
                 Text(
-                    listOfNotNull(cpu?.socName?.takeIf { it.isNotBlank() }, cpu?.let { stringResource(R.string.monitor_cores, it.cores) })
+                    listOfNotNull(cpu?.socName?.takeIf { it.isNotBlank() }, cpu?.let { pluralStringResource(R.plurals.cores_count, it.cores, it.cores) })
                         .joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -169,7 +172,7 @@ private fun CoreRow(core: CoreFreq, modifier: Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
-            Text(formatFrequency(core.curKhz), style = MaterialTheme.typography.bodySmall)
+            Text(formatFrequency(core.curKhz, currentLocale()), style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(4.dp))
         val max = core.maxKhz
@@ -178,9 +181,9 @@ private fun CoreRow(core: CoreFreq, modifier: Modifier) {
     }
 }
 
-fun formatFrequency(khz: Long?): String = when {
+fun formatFrequency(khz: Long?, locale: Locale): String = when {
     khz == null -> "—"
-    khz >= 1_000_000 -> String.format(Locale.getDefault(), "%.2f GHz", khz / 1_000_000.0)
+    khz >= 1_000_000 -> String.format(locale, "%.2f GHz", khz / 1_000_000.0)
     else -> "${khz / 1000} MHz"
 }
 
@@ -211,12 +214,10 @@ private fun ThermalCard(state: MonitorUiState, onOpenBoost: () -> Unit, onBatter
                     )
                 }
             }
+            val locale = currentLocale()
             val tempText = when {
-                cpuTemp != null -> String.format(Locale.getDefault(), "%.1f °C", cpuTemp)
-                batteryTemp != null -> stringResource(
-                    R.string.monitor_temp_battery,
-                    String.format(Locale.getDefault(), "%.1f °C", batteryTemp),
-                )
+                cpuTemp != null -> formatCelsius(cpuTemp, locale)
+                batteryTemp != null -> stringResource(R.string.monitor_temp_battery, formatCelsius(batteryTemp, locale))
                 else -> "—"
             }
             Text(tempText, style = MaterialTheme.typography.titleLarge, color = color)

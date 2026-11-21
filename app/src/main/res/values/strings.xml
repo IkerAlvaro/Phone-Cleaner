@@ -9,13 +9,10 @@
     <string name="action_grant">Conceder</string>
     <string name="action_settings">Ajustes</string>
     <string name="action_open_settings">Abrir ajustes</string>
-    <string name="action_retry">Reintentar</string>
     <string name="action_done">Hecho</string>
-    <string name="action_cancel">Cancelar</string>
     <string name="action_select_all">Seleccionar todo</string>
     <string name="action_deselect_all">Quitar selección</string>
     <string name="granted">Concedido</string>
-    <string name="not_available">No disponible</string>
     <string name="unknown">Desconocido</string>
     <string name="home_storage_used">%1$s de %2$s</string>
     <string name="home_storage_label">Almacenamiento usado</string>
@@ -48,7 +45,6 @@
     <string name="perm_notifications_desc">Para avisarte cuando haya basura que limpiar y mostrar el progreso de la compresión.</string>
     <string name="cleaner_title">Limpieza rápida</string>
     <string name="cleaner_scanning">Analizando…</string>
-    <string name="cleaner_found">%1$s encontrados</string>
     <string name="cleaner_found_label">encontrados</string>
     <string name="cleaner_clean_button">Limpiar %1$s</string>
     <string name="cleaner_nothing_selected">Selecciona algo para limpiar</string>
@@ -59,7 +55,6 @@
     <string name="cleaner_back_home">Volver al inicio</string>
     <string name="cleaner_start">Analizar</string>
     <string name="cleaner_intro">Busca archivos basura, instaladores sobrantes y caché que puedes borrar sin perder nada importante.</string>
-    <string name="cleaner_review_hint">Revisa antes de borrar</string>
     <string name="cleaner_needs_files">Sin acceso a todos los archivos solo podemos analizar la caché de las apps.</string>
     <string name="cat_thumbnails">Miniaturas</string>
     <string name="cat_thumbnails_desc">Vistas previas que la galería vuelve a crear</string>
@@ -94,7 +89,6 @@
     <string name="boost_needs_usage">Concede el acceso de uso para ver qué apps has usado recientemente.</string>
     <string name="boost_working">Liberando memoria…</string>
     <string name="quick_stop_progress">Deteniendo %1$d de %2$d: %3$s</string>
-    <string name="boost_quick_stop_done">Detención rápida terminada</string>
     <string name="apps_title">Apps</string>
     <string name="apps_sort_size">Tamaño</string>
     <string name="apps_sort_cache">Caché</string>
@@ -107,7 +101,6 @@
     <string name="apps_uninstall_selected">Desinstalar (%1$d)</string>
     <string name="apps_last_used">Usada %1$s</string>
     <string name="apps_never_used">Sin uso reciente</string>
-    <string name="apps_loading">Cargando apps…</string>
     <string name="app_detail_size">Almacenamiento</string>
     <string name="app_detail_app">App</string>
     <string name="app_detail_data">Datos</string>
@@ -163,7 +156,6 @@
     <string name="tip_boost_desc">Libera RAM y reduce el consumo</string>
     <string name="monitor_title">Sistema</string>
     <string name="monitor_cpu">Procesador</string>
-    <string name="monitor_cores">%1$d núcleos</string>
     <string name="monitor_cpu_activity">Actividad estimada</string>
     <string name="monitor_cpu_activity_note">Calculada a partir de la frecuencia de cada núcleo; Android no permite leer el uso exacto.</string>
     <string name="monitor_core">Núcleo %1$d</string>
@@ -229,7 +221,6 @@
     <string name="reminder_title">Hora de limpiar</string>
     <string name="reminder_text">Puedes liberar unos %1$s</string>
     <string name="settings_title">Ajustes</string>
-    <string name="settings_appearance">Apariencia</string>
     <string name="settings_theme">Tema</string>
     <string name="theme_system">Según el sistema</string>
     <string name="theme_light">Claro</string>
@@ -239,7 +230,7 @@
     <string name="settings_permissions">Permisos</string>
     <string name="settings_about">Acerca de</string>
     <string name="settings_version">Versión %1$s</string>
-    <string name="settings_privacy">100 % sin conexión: sin anuncios, sin rastreo y sin enviar datos a ningún servidor.</string>
+    <string name="settings_privacy" formatted="false">100 % sin conexión: sin anuncios, sin rastreo y sin enviar datos a ningún servidor.</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_desc">Usa el idioma del móvil. En Android 13 o superior puedes elegirlo en los ajustes de la app.</string>
     <string name="onboarding_title">Limpia, acelera y cuida tu móvil</string>
@@ -263,5 +254,9 @@
     <plurals name="files_count">
         <item quantity="one">%d archivo</item>
         <item quantity="other">%d archivos</item>
+    </plurals>
+    <plurals name="cores_count">
+        <item quantity="one">%d núcleo</item>
+        <item quantity="other">%d núcleos</item>
     </plurals>
 </resources>

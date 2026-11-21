@@ -1,10 +1,10 @@
-@file:OptIn(UnstableApi::class)
-
 package com.ikeralvaro.phonecleaner.feature.compress
 
 import android.content.Context
 import android.media.MediaMetadataRetriever
-import android.net.Uri
+import android.os.Build
+import androidx.core.net.toUri
+import androidx.annotation.OptIn
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.transformer.Composition
@@ -31,6 +31,7 @@ import androidx.media3.common.MediaItem as Media3Item
 data class VideoInfo(val width: Int, val height: Int, val fps: Float, val bitrate: Int, val durationMs: Long)
 
 /** Transcodifica vídeos con Media3 Transformer a HEVC (o H.264 si el móvil no tiene codificador HEVC). */
+@OptIn(UnstableApi::class)
 class VideoCompressor(private val context: Context, private val saver: MediaSaver) {
 
     val supportsHevc: Boolean by lazy {
@@ -44,10 +45,10 @@ class VideoCompressor(private val context: Context, private val saver: MediaSave
     fun readInfo(item: MediaItem): VideoInfo? = try {
         MediaMetadataRetriever().run {
             try {
-                setDataSource(context, Uri.parse(item.uri))
+                setDataSource(context, item.uri.toUri())
                 fun int(key: Int) = extractMetadata(key)?.toIntOrNull()
                 val duration = extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: item.durationMs
-                val frames = int(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT)
+                val frames = if (Build.VERSION.SDK_INT >= 28) int(MediaMetadataRetriever.METADATA_KEY_VIDEO_FRAME_COUNT) else null
                 val fps = extractMetadata(MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE)?.toFloatOrNull()
                     ?: if (frames != null && duration > 0) frames * 1000f / duration else 30f
                 VideoInfo(
@@ -73,7 +74,7 @@ class VideoCompressor(private val context: Context, private val saver: MediaSave
             ?: return CompressionOutcome.NotWorthIt
         val temp = File(context.cacheDir, "compress/${item.id}.mp4").apply { parentFile?.mkdirs(); delete() }
         try {
-            val error = transcode(Uri.parse(item.uri), temp, bitrate, hevc, onProgress)
+            val error = transcode(item.uri.toUri(), temp, bitrate, hevc, onProgress)
             if (error != null) return CompressionOutcome.Failed(error)
             if (!CompressionPlanner.isWorthIt(item.sizeBytes, temp.length(), CompressionPlanner.VIDEO_MIN_SAVINGS)) {
                 return CompressionOutcome.NotWorthIt
@@ -87,7 +88,7 @@ class VideoCompressor(private val context: Context, private val saver: MediaSave
     }
 
     /** Devuelve null si ha ido bien o un código de error. Transformer debe usarse desde el hilo principal. */
-    private suspend fun transcode(input: Uri, output: File, bitrate: Int, hevc: Boolean, onProgress: (Float) -> Unit): String? =
+    private suspend fun transcode(input: android.net.Uri, output: File, bitrate: Int, hevc: Boolean, onProgress: (Float) -> Unit): String? =
         withContext(Dispatchers.Main) {
             val done = CompletableDeferred<String?>()
             val transformer = Transformer.Builder(context)

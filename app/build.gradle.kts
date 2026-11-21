@@ -42,6 +42,15 @@ android {
         compose = true
     }
 
+    lint {
+        // Las versiones se fijan a propósito a publicaciones estables con al menos dos semanas.
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+        // targetSdk 36 es el exigido por Google Play en 2026; se compila contra 37.
+        disable += "OldTargetApi"
+        // aapt2 necesita la carpeta mipmap-anydpi-v26 para los iconos adaptativos aunque minSdk sea 26.
+        disable += "ObsoleteSdkInt"
+    }
+
     testOptions {
         unitTests {
             isIncludeAndroidResources = true

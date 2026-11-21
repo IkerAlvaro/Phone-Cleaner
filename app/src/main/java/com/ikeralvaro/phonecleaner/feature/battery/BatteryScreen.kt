@@ -49,7 +49,8 @@ import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
 import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 import com.ikeralvaro.phonecleaner.ui.components.UsageRing
-import java.util.Locale
+import com.ikeralvaro.phonecleaner.ui.components.currentLocale
+import com.ikeralvaro.phonecleaner.ui.components.formatCelsius
 
 @Composable
 fun BatteryScreen(onBack: () -> Unit, onOpenBoost: () -> Unit, onOpenApp: (String) -> Unit) {
@@ -165,9 +166,9 @@ private fun BatteryHeader(battery: BatterySnapshot?) {
 
 @Composable
 private fun DetailsCard(battery: BatterySnapshot) {
-    val locale = Locale.getDefault()
+    val locale = currentLocale()
     SectionCard {
-        battery.temperatureC?.let { KeyValueRow(stringResource(R.string.battery_temperature), String.format(locale, "%.1f °C", it)) }
+        battery.temperatureC?.let { KeyValueRow(stringResource(R.string.battery_temperature), formatCelsius(it, locale)) }
         KeyValueRow(stringResource(R.string.battery_health), stringResource(battery.health.label()))
         battery.voltageMv?.let { KeyValueRow(stringResource(R.string.battery_voltage), String.format(locale, "%.2f V", it / 1000.0)) }
         battery.currentMa?.let { KeyValueRow(stringResource(R.string.battery_current), "$it mA") }

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import com.ikeralvaro.phonecleaner.feature.media.MediaItem
 import java.io.File
 
@@ -17,6 +18,7 @@ class MediaSaver(private val context: Context) {
     fun save(temp: File, original: MediaItem, mimeType: String, isVideo: Boolean): Uri? =
         if (Build.VERSION.SDK_INT >= 29) saveScoped(temp, original, mimeType, isVideo) else saveLegacy(temp, original)
 
+    @RequiresApi(29)
     private fun saveScoped(temp: File, original: MediaItem, mimeType: String, isVideo: Boolean): Uri? {
         val collection = if (isVideo) {
             MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
