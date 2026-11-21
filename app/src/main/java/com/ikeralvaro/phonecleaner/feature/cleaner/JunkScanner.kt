@@ -45,7 +45,11 @@ class JunkScanner(
             currentCoroutineContext().ensureActive()
             val file = File(item.path)
             if (!file.exists()) continue
-            val ok = if (file.isDirectory) file.deleteRecursively() else file.delete()
+            val ok = when {
+                !file.isDirectory -> file.delete()
+                item.sizeBytes == 0L -> deleteEmptyTree(file)
+                else -> file.deleteRecursively()
+            }
             if (ok) {
                 freed += item.sizeBytes
                 deletedPaths += item.path
@@ -139,6 +143,13 @@ class JunkScanner(
         Files.isSymbolicLink(file.toPath())
     } catch (_: Exception) {
         true
+    }
+
+    /** Borra una carpeta vacía (y subcarpetas vacías) solo si sigue sin ningún archivo dentro. */
+    private fun deleteEmptyTree(dir: File): Boolean {
+        if (dir.walkTopDown().any { it.isFile }) return false
+        dir.walkBottomUp().forEach { it.delete() }
+        return !dir.exists()
     }
 
     private fun dirSize(dir: File): Long = dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }

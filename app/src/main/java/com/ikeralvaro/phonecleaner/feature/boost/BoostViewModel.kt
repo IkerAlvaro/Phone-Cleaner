@@ -49,7 +49,11 @@ class BoostViewModel(private val container: AppContainer) : ViewModel() {
                     phase = if (s.phase == BoostPhase.DONE) BoostPhase.DONE else BoostPhase.READY,
                     memory = memory,
                     candidates = candidates,
-                    selected = candidates.map { it.packageName }.toSet(),
+                    selected = if (s.phase == BoostPhase.LOADING) {
+                        candidates.map { it.packageName }.toSet()
+                    } else {
+                        s.selected intersect candidates.map { it.packageName }.toSet()
+                    },
                     hasUsageAccess = hasUsage,
                 )
             }

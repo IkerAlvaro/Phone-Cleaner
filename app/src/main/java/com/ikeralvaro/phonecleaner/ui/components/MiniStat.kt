@@ -41,7 +41,7 @@ fun MiniStat(
                 Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.height(8.dp))
-            Text(value, style = MaterialTheme.typography.headlineSmall, maxLines = 1)
+            Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onSurface, maxLines = 1)
             if (detail != null) {
                 Text(
                     detail,

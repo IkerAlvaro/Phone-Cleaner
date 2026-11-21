@@ -49,6 +49,8 @@ data class CompressUiState(
     val videos: List<CompressCandidate> = emptyList(),
     val selected: Set<Long> = emptySet(),
     val run: CompressRun = CompressRun(),
+    /** La compresión acaba de terminar con la pantalla abierta: se ofrece mover los originales a la papelera. */
+    val justFinished: Boolean = false,
 ) {
     val visible: List<CompressCandidate> get() = if (tab == CompressTab.PHOTOS) photos else videos
     val selectedCandidates: List<CompressCandidate> get() = (photos + videos).filter { it.item.id in selected }
@@ -68,7 +70,12 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
                 val info = infos.lastOrNull() ?: return@collect
                 val run = toRun(info)
                 val finishedNow = run.state == RunState.FINISHED && _state.value.run.state == RunState.RUNNING
-                _state.update { it.copy(run = run.copy(originalsTrashed = it.run.originalsTrashed && run.state != RunState.RUNNING)) }
+                _state.update {
+                    it.copy(
+                        run = run.copy(originalsTrashed = it.run.originalsTrashed && run.state != RunState.RUNNING),
+                        justFinished = it.justFinished || finishedNow,
+                    )
+                }
                 if (finishedNow) load()
             }
         }
@@ -126,16 +133,22 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun consumeJustFinished() = _state.update { it.copy(justFinished = false) }
+
     fun onOriginalsTrashed(ok: Boolean) {
         if (!ok) return
+        originalsFile().delete()
         _state.update { it.copy(run = it.run.copy(originalsTrashed = true)) }
         load()
     }
 
     fun dismissResult() {
+        originalsFile().delete()
         workManager.pruneWork()
-        _state.update { it.copy(run = CompressRun()) }
+        _state.update { it.copy(run = CompressRun(), justFinished = false) }
     }
+
+    private fun originalsFile() = File(container.appContext.filesDir, ORIGINALS_FILE)
 
     private suspend fun recompute(selectAllPhotos: Boolean) {
         val mode = _state.value.mode
@@ -160,6 +173,10 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
             val selected = if (selectAllPhotos) photos.map { it.item.id }.toSet() else s.selected intersect available
             s.copy(loading = false, hasAccess = true, photos = photos, videos = vids, selected = selected)
         }
+    }
+
+    companion object {
+        const val ORIGINALS_FILE = "compress/originals.txt"
     }
 
     private fun toRun(info: WorkInfo): CompressRun = when (info.state) {

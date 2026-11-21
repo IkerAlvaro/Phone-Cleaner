@@ -37,7 +37,7 @@ class CompressWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 compressedOriginals += item.uri
             }
         }
-        val originalsFile = File(applicationContext.filesDir, "compress/originals.txt").apply {
+        val originalsFile = File(applicationContext.filesDir, CompressViewModel.ORIGINALS_FILE).apply {
             parentFile?.mkdirs()
             writeText(compressedOriginals.joinToString("\n"))
         }

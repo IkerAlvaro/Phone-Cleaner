@@ -70,7 +70,8 @@ fun MediaReviewScreen(viewModel: MediaViewModel, category: MediaCategory, onBack
         val request = pending ?: return@rememberLauncherForActivityResult
         pending = null
         if (result.resultCode == Activity.RESULT_OK) {
-            viewModel.onDeleted(request.pendingIds, request.freedSoFar)
+            // A la papelera: se quita de la lista, pero el espacio no se libera hasta que se vacía.
+            viewModel.onDeleted(request.pendingIds, permanentlyFreedBytes = 0L)
             selected = selected.filter { it !in request.pendingIds }.toLongArray()
         }
     }
@@ -89,7 +90,7 @@ fun MediaReviewScreen(viewModel: MediaViewModel, category: MediaCategory, onBack
             scope.launch {
                 when (val request = viewModel.prepareDelete(ids)) {
                     is DeleteRequest.NeedsConfirmation -> {
-                        if (request.freedSoFar > 0) viewModel.onDeleted(emptySet(), request.freedSoFar)
+                        viewModel.onDeleted(request.directDeletedIds, request.directFreedBytes)
                         pending = request
                         confirmLauncher.launch(IntentSenderRequest.Builder(request.sender).build())
                     }

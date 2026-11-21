@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,7 +30,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settings by container.settingsRepository.settings.collectAsStateWithLifecycle(initialValue = null)
             val current = settings ?: return@setContent
-            settingsLoaded = true
+            SideEffect { settingsLoaded = true }
 
             val darkTheme = when (current.themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()

@@ -1,8 +1,9 @@
 package com.ikeralvaro.phonecleaner.feature.home
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
+import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
 import com.ikeralvaro.phonecleaner.ui.components.FeatureTile
 import com.ikeralvaro.phonecleaner.ui.components.MiniStat
@@ -175,14 +177,16 @@ private fun ToolGrid(onTool: (HomeTool) -> Unit) {
     )
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         tools.chunked(2).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEach { (tool, icon, texts) ->
                     FeatureTile(
                         icon = icon,
                         title = stringResource(texts.first),
                         subtitle = stringResource(texts.second),
                         onClick = { onTool(tool) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
                     )
                 }
             }
@@ -193,7 +197,7 @@ private fun ToolGrid(onTool: (HomeTool) -> Unit) {
 @Composable
 private fun lastCleanText(state: HomeUiState, now: Long): String {
     if (state.lastCleanAt <= 0L) return stringResource(R.string.home_never_cleaned)
-    val relative = DateUtils.getRelativeTimeSpanString(state.lastCleanAt, now, DateUtils.MINUTE_IN_MILLIS).toString()
+    val relative = relativeTime(state.lastCleanAt, now)
     return stringResource(R.string.home_last_clean, relative) + " · " +
         stringResource(R.string.home_total_freed, formatBytes(state.totalFreedBytes))
 }

@@ -50,9 +50,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -79,8 +76,6 @@ fun CompressScreen(onBack: () -> Unit) {
     val viewModel = appViewModel { CompressViewModel(it) }
     val state by viewModel.state.collectAsStateWithLifecycle()
     val actions = rememberPermissionActions()
-    var trashAsked by rememberSaveable { mutableStateOf(false) }
-
     LifecycleResumeEffect(Unit) {
         viewModel.load()
         onPauseOrDispose { }
@@ -92,13 +87,13 @@ fun CompressScreen(onBack: () -> Unit) {
         viewModel.trashOriginalsRequest()?.let { trashLauncher.launch(IntentSenderRequest.Builder(it).build()) }
         Unit
     }
-    // Al terminar, se ofrece una vez mover los originales a la papelera (el sistema pide confirmación).
-    LaunchedEffect(state.run.state, state.run.originals) {
-        if (state.run.state == RunState.FINISHED && state.run.originals.isNotEmpty() && !trashAsked && !state.run.originalsTrashed) {
-            trashAsked = true
-            askTrash()
+    // Al terminar con la pantalla abierta, se ofrece una vez mover los originales a la papelera
+    // (el sistema pide confirmación). Si se rechaza, queda el botón en la tarjeta de resultado.
+    LaunchedEffect(state.justFinished) {
+        if (state.justFinished) {
+            viewModel.consumeJustFinished()
+            if (state.run.originals.isNotEmpty() && !state.run.originalsTrashed) askTrash()
         }
-        if (state.run.state == RunState.RUNNING) trashAsked = false
     }
 
     CompressContent(

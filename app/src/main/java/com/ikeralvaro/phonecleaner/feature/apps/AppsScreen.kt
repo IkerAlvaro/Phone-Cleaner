@@ -2,7 +2,6 @@ package com.ikeralvaro.phonecleaner.feature.apps
 
 import android.content.Intent
 import android.net.Uri
-import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +47,7 @@ import com.ikeralvaro.phonecleaner.appViewModel
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.core.util.formatDuration
+import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.EmptyState
 import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
@@ -221,33 +221,27 @@ private fun AppRow(app: AppEntry, sort: AppSort, checked: Boolean, now: Long, on
         AppIcon(app.packageName, app.label, size = 44.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    app.label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                if (app.isSystem) {
-                    Spacer(Modifier.width(6.dp))
-                    Tag(stringResource(R.string.apps_system_badge))
-                }
-                if (AppsLogic.isUnused(app, now)) {
-                    Spacer(Modifier.width(6.dp))
-                    Tag(
-                        stringResource(R.string.apps_unused_badge),
-                        color = MaterialTheme.colorScheme.onTertiaryContainer,
-                        background = MaterialTheme.colorScheme.tertiaryContainer,
-                    )
-                }
-            }
+            Text(app.label, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 lastUsedText(app, now),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            val unused = AppsLogic.isUnused(app, now)
+            if (app.isSystem || unused) {
+                Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (app.isSystem) Tag(stringResource(R.string.apps_system_badge))
+                    if (unused) {
+                        Tag(
+                            stringResource(R.string.apps_unused_badge),
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            background = MaterialTheme.colorScheme.tertiaryContainer,
+                        )
+                    }
+                }
+            }
         }
         Spacer(Modifier.width(8.dp))
         Text(
@@ -262,10 +256,7 @@ private fun AppRow(app: AppEntry, sort: AppSort, checked: Boolean, now: Long, on
 @Composable
 private fun lastUsedText(app: AppEntry, now: Long): String {
     val last = app.lastUsedAt ?: return stringResource(R.string.apps_never_used)
-    return stringResource(
-        R.string.apps_last_used,
-        DateUtils.getRelativeTimeSpanString(last, now, DateUtils.MINUTE_IN_MILLIS).toString(),
-    )
+    return stringResource(R.string.apps_last_used, relativeTime(last, now))
 }
 
 private fun trailingValue(app: AppEntry, sort: AppSort): String = when (sort) {

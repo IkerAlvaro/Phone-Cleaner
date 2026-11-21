@@ -23,7 +23,13 @@ import java.security.MessageDigest
 
 /** Resultado de preparar un borrado: o hace falta la confirmación del sistema, o ya está hecho. */
 sealed interface DeleteRequest {
-    data class NeedsConfirmation(val sender: IntentSender, val pendingIds: Set<Long>, val freedSoFar: Long) : DeleteRequest
+    /** [directDeletedIds]/[directFreedBytes]: lo que ya se borró sin confirmación (archivos no multimedia). */
+    data class NeedsConfirmation(
+        val sender: IntentSender,
+        val pendingIds: Set<Long>,
+        val directDeletedIds: Set<Long>,
+        val directFreedBytes: Long,
+    ) : DeleteRequest
     data class Done(val deletedIds: Set<Long>, val freedBytes: Long) : DeleteRequest
 }
 
@@ -133,7 +139,7 @@ class MediaRepository(private val context: Context, private val permissions: Per
         if (viaSystem.isNotEmpty() && Build.VERSION.SDK_INT >= 30) {
             val uris = viaSystem.map { it.uri.toUri() }
             val pending = MediaStore.createTrashRequest(resolver, uris, true)
-            DeleteRequest.NeedsConfirmation(pending.intentSender, viaSystem.map { it.id }.toSet(), freed)
+            DeleteRequest.NeedsConfirmation(pending.intentSender, viaSystem.map { it.id }.toSet(), deleted, freed)
         } else {
             DeleteRequest.Done(deleted, freed)
         }

@@ -1,6 +1,5 @@
 package com.ikeralvaro.phonecleaner.feature.boost
 
-import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +40,7 @@ import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.appViewModel
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
+import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.feature.apps.AppEntry
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
@@ -240,10 +240,7 @@ private fun CandidateRow(app: AppEntry, checked: Boolean, now: Long, onToggle: (
             val last = app.lastUsedAt
             if (last != null) {
                 Text(
-                    stringResource(
-                        R.string.apps_last_used,
-                        DateUtils.getRelativeTimeSpanString(last, now, DateUtils.MINUTE_IN_MILLIS).toString(),
-                    ),
+                    stringResource(R.string.apps_last_used, relativeTime(last, now)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
