@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.monitor
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,12 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BatteryChargingFull
-import androidx.compose.material.icons.rounded.DeveloperBoard
-import androidx.compose.material.icons.rounded.Memory
-import androidx.compose.material.icons.rounded.Storage
-import androidx.compose.material.icons.rounded.Thermostat
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -39,12 +34,19 @@ import com.ikeralvaro.phonecleaner.ui.components.IconBadge
 import com.ikeralvaro.phonecleaner.ui.components.KeyValueRow
 import com.ikeralvaro.phonecleaner.ui.components.LinearMeter
 import com.ikeralvaro.phonecleaner.ui.components.MiniStat
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 import com.ikeralvaro.phonecleaner.ui.components.currentLocale
 import com.ikeralvaro.phonecleaner.ui.components.formatCelsius
+import com.ikeralvaro.phonecleaner.ui.components.formatNumber
+import com.ikeralvaro.phonecleaner.ui.components.percent
+import com.ikeralvaro.phonecleaner.ui.components.percentOf
+import com.ikeralvaro.phonecleaner.ui.components.GradientHeader
+import com.ikeralvaro.phonecleaner.ui.components.SecondaryButton
+import com.ikeralvaro.phonecleaner.ui.components.listPadding
+import com.ikeralvaro.phonecleaner.core.system.CpuSnapshot
+import com.ikeralvaro.phonecleaner.core.system.ThermalSnapshot
+import androidx.compose.foundation.layout.WindowInsets
 import java.util.Locale
-import kotlin.math.roundToInt
 
 @Composable
 fun MonitorScreen(onOpenBattery: () -> Unit, onOpenBoost: () -> Unit, onBatterySaver: () -> Unit) {
@@ -60,23 +62,26 @@ fun MonitorContent(
     onOpenBoost: () -> Unit,
     onBatterySaver: () -> Unit,
 ) {
-    Scaffold(topBar = { PhoneCleanerTopBar(stringResource(R.string.monitor_title)) }) { padding ->
+    Scaffold(
+        topBar = { GradientHeader(stringResource(R.string.monitor_title)) },
+        contentWindowInsets = WindowInsets(0),
+    ) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(listPadding(padding)),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            CpuCard(state)
-            ThermalCard(state, onOpenBoost, onBatterySaver)
+            // Cada tarjeta recibe solo los datos que pinta: así no se recomponen todas en cada tic.
+            CpuCard(state.cpu)
+            ThermalCard(state.thermal, state.battery?.temperatureC, onOpenBoost, onBatterySaver)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val memory = state.memory
                 MiniStat(
-                    icon = Icons.Rounded.Memory,
+                    icon = AppIcons.Memory,
                     label = stringResource(R.string.monitor_ram),
-                    value = memory?.let { "${(it.usedFraction * 100).roundToInt()} %" } ?: "—",
+                    value = memory?.let { percent(it.usedFraction) } ?: "—",
                     detail = memory?.let { stringResource(R.string.monitor_free, formatBytes(it.availableBytes)) },
                     progress = memory?.usedFraction,
                     modifier = Modifier.weight(1f),
@@ -84,9 +89,9 @@ fun MonitorContent(
                 )
                 val storage = state.storage
                 MiniStat(
-                    icon = Icons.Rounded.Storage,
+                    icon = AppIcons.Storage,
                     label = stringResource(R.string.monitor_storage),
-                    value = storage?.let { "${(it.usedFraction * 100).roundToInt()} %" } ?: "—",
+                    value = storage?.let { percent(it.usedFraction) } ?: "—",
                     detail = storage?.let { stringResource(R.string.monitor_free, formatBytes(it.freeBytes)) },
                     progress = storage?.usedFraction,
                     modifier = Modifier.weight(1f),
@@ -94,9 +99,9 @@ fun MonitorContent(
             }
             val battery = state.battery
             MiniStat(
-                icon = Icons.Rounded.BatteryChargingFull,
+                icon = AppIcons.BatteryChargingFull,
                 label = stringResource(R.string.battery_title),
-                value = battery?.let { "${it.levelPercent} %" } ?: "—",
+                value = battery?.let { percentOf(it.levelPercent) } ?: "—",
                 detail = battery?.temperatureC?.let { formatCelsius(it, currentLocale()) },
                 progress = battery?.levelPercent?.div(100f),
                 onClick = onOpenBattery,
@@ -108,29 +113,27 @@ fun MonitorContent(
                     KeyValueRow(stringResource(R.string.monitor_uptime), formatDuration(device.uptimeMs))
                 }
             }
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
 
 @Composable
-private fun CpuCard(state: MonitorUiState) {
-    val cpu = state.cpu
+private fun CpuCard(cpu: CpuSnapshot?) {
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBadge(Icons.Rounded.DeveloperBoard)
+            IconBadge(AppIcons.DeveloperBoard)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.monitor_cpu), style = MaterialTheme.typography.titleMedium)
                 Text(
                     listOfNotNull(cpu?.socName?.takeIf { it.isNotBlank() }, cpu?.let { pluralStringResource(R.plurals.cores_count, it.cores, it.cores) })
-                        .joinToString(" · "),
+                        .joinToString(stringResource(R.string.separator_dot)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             cpu?.estimatedLoad?.let {
-                Text("${(it * 100).roundToInt()} %", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
+                Text(percent(it), style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -184,14 +187,12 @@ private fun CoreRow(core: CoreFreq, modifier: Modifier) {
 fun formatFrequency(khz: Long?, locale: Locale): String = when {
     khz == null -> "—"
     khz >= 1_000_000 -> String.format(locale, "%.2f GHz", khz / 1_000_000.0)
-    else -> "${khz / 1000} MHz"
+    else -> formatNumber(khz / 1000, locale) + " MHz"
 }
 
 @Composable
-private fun ThermalCard(state: MonitorUiState, onOpenBoost: () -> Unit, onBatterySaver: () -> Unit) {
-    val thermal = state.thermal
+private fun ThermalCard(thermal: ThermalSnapshot?, batteryTemp: Float?, onOpenBoost: () -> Unit, onBatterySaver: () -> Unit) {
     val cpuTemp = thermal?.cpuTempC
-    val batteryTemp = state.battery?.temperatureC
     val level = thermal?.level ?: ThermalLevel.UNKNOWN
     val hot = level >= ThermalLevel.MODERATE && level != ThermalLevel.UNKNOWN ||
         (cpuTemp ?: batteryTemp ?: 0f) >= 42f
@@ -202,13 +203,13 @@ private fun ThermalCard(state: MonitorUiState, onOpenBoost: () -> Unit, onBatter
     }
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBadge(Icons.Rounded.Thermostat, tint = color)
+            IconBadge(AppIcons.Thermostat, tint = color)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.monitor_temperature), style = MaterialTheme.typography.titleMedium)
                 if (level != ThermalLevel.UNKNOWN) {
                     Text(
-                        stringResource(R.string.monitor_thermal) + ": " + stringResource(level.label()),
+                        stringResource(R.string.label_value, stringResource(R.string.monitor_thermal), stringResource(level.label())),
                         style = MaterialTheme.typography.bodySmall,
                         color = color,
                     )
@@ -227,8 +228,8 @@ private fun ThermalCard(state: MonitorUiState, onOpenBoost: () -> Unit, onBatter
             Text(stringResource(R.string.monitor_hot_advice), style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onOpenBoost) { Text(stringResource(R.string.tool_boost)) }
-                OutlinedButton(onClick = onBatterySaver) { Text(stringResource(R.string.tip_saver)) }
+                SecondaryButton(stringResource(R.string.tool_boost), onOpenBoost, Modifier.weight(1f))
+                SecondaryButton(stringResource(R.string.tip_saver), onBatterySaver, Modifier.weight(1f))
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.ui.components
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,9 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -26,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ikeralvaro.phonecleaner.R
+import com.ikeralvaro.phonecleaner.ui.theme.LocalDarkTheme
 import com.ikeralvaro.phonecleaner.ui.theme.buttonGradient
 import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
 
@@ -116,7 +116,12 @@ fun FeatureTile(
                     .background(buttonGradient()),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(26.dp))
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = if (LocalDarkTheme.current) MaterialTheme.colorScheme.onPrimary else Color.White,
+                    modifier = Modifier.size(26.dp),
+                )
             }
             Spacer(Modifier.height(10.dp))
             Text(
@@ -184,7 +189,7 @@ fun CategoryRow(
             Checkbox(checked = checked, onCheckedChange = onCheckedChange)
         } else if (onClick != null) {
             Icon(
-                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                AppIcons.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -205,10 +210,11 @@ fun PermissionCard(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        border = BorderStroke(1.dp, cardBorderColor()),
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             IconBadge(
-                Icons.Rounded.Lock,
+                AppIcons.Lock,
                 tint = MaterialTheme.colorScheme.onPrimary,
                 background = MaterialTheme.colorScheme.primary,
             )
@@ -252,7 +258,8 @@ fun BigActionButton(
         shape = shape,
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent,
-            contentColor = Color.White,
+            // Blanco sobre el verde oscuro en claro; verde muy oscuro sobre el verde vivo en oscuro (contraste AA).
+            contentColor = if (LocalDarkTheme.current) MaterialTheme.colorScheme.onPrimary else Color.White,
         ),
     ) {
         if (icon != null) {
@@ -260,6 +267,35 @@ fun BigActionButton(
             Spacer(Modifier.width(8.dp))
         }
         Text(text, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+/** Botón secundario: contorno verde (o rojo si [destructive]), mismo alto que [BigActionButton]. */
+@Composable
+fun SecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: ImageVector? = null,
+    destructive: Boolean = false,
+) {
+    val color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp),
+        shape = MaterialTheme.shapes.extraLarge,
+        border = BorderStroke(1.5.dp, if (enabled) color else color.copy(alpha = 0.38f)),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = color),
+    ) {
+        if (icon != null) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -289,7 +325,13 @@ fun KeyValueRow(label: String, value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun EmptyState(icon: ImageVector, title: String, message: String, modifier: Modifier = Modifier) {
+fun EmptyState(
+    icon: ImageVector,
+    title: String,
+    message: String,
+    modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null,
+) {
     Column(
         modifier
             .fillMaxWidth()
@@ -298,9 +340,18 @@ fun EmptyState(icon: ImageVector, title: String, message: String, modifier: Modi
     ) {
         IconBadge(icon, Modifier.size(64.dp))
         Spacer(Modifier.height(16.dp))
-        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
         Spacer(Modifier.height(4.dp))
-        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        if (action != null) {
+            Spacer(Modifier.height(16.dp))
+            action()
+        }
     }
 }
 

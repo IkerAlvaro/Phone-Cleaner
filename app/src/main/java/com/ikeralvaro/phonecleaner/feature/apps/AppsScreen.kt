@@ -1,13 +1,24 @@
 package com.ikeralvaro.phonecleaner.feature.apps
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.clip
+import com.ikeralvaro.phonecleaner.ui.components.ConfirmDialog
+import com.ikeralvaro.phonecleaner.ui.components.GradientHeader
+import com.ikeralvaro.phonecleaner.ui.components.SecondaryButton
+import com.ikeralvaro.phonecleaner.ui.components.bottomContentPadding
+import com.ikeralvaro.phonecleaner.ui.components.listPadding
+import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,14 +28,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,7 +55,6 @@ import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.EmptyState
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.Tag
 import com.ikeralvaro.phonecleaner.ui.components.rememberSequentialLauncher
 
@@ -99,39 +105,68 @@ fun AppsContent(
     onOpenApp: (String) -> Unit,
     onStopSelected: () -> Unit,
     onUninstallSelected: () -> Unit,
+    initialConfirm: Boolean = false,
 ) {
+    val count = state.selected.size
+    var confirmUninstall by rememberSaveable { mutableStateOf(initialConfirm) }
+    if (confirmUninstall && count > 0) {
+        ConfirmDialog(
+            title = stringResource(R.string.apps_confirm_uninstall_title),
+            message = pluralStringResource(R.plurals.apps_confirm_uninstall_message, count, count),
+            confirmLabel = stringResource(R.string.apps_uninstall_selected, count),
+            onConfirm = {
+                confirmUninstall = false
+                onUninstallSelected()
+            },
+            onDismiss = { confirmUninstall = false },
+            icon = AppIcons.Delete,
+            destructive = true,
+        )
+    }
     Scaffold(
-        topBar = { PhoneCleanerTopBar(stringResource(R.string.apps_title), onBack = onBack) },
+        topBar = { GradientHeader(stringResource(R.string.apps_title), onBack = onBack) },
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (state.selected.isNotEmpty()) {
-                Surface(color = MaterialTheme.colorScheme.background, tonalElevation = 3.dp) {
+            if (count > 0) {
+                // Barra de selección por encima de la barra píldora (o de la barra del sistema).
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = MaterialTheme.shapes.large,
+                    border = BorderStroke(1.dp, cardBorderColor()),
+                    modifier = Modifier
+                        .padding(bottom = bottomContentPadding())
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        OutlinedButton(onClick = onStopSelected, modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.apps_stop_selected, state.selected.size))
-                        }
-                        Button(onClick = onUninstallSelected, modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.apps_uninstall_selected, state.selected.size))
-                        }
+                        SecondaryButton(
+                            text = stringResource(R.string.apps_stop_selected, count),
+                            onClick = onStopSelected,
+                            modifier = Modifier.weight(1f),
+                        )
+                        SecondaryButton(
+                            text = stringResource(R.string.apps_uninstall_selected, count),
+                            onClick = { confirmUninstall = true },
+                            modifier = Modifier.weight(1f),
+                            destructive = true,
+                        )
                     }
                 }
             }
         },
     ) { padding ->
-        val visible = state.visibleApps
+        val visible = remember(state.apps, state.sort) { state.visibleApps }
         LazyColumn(
-            Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            Modifier.fillMaxSize(),
+            contentPadding = listPadding(padding, vertical = 8.dp),
         ) {
-            item { SortChips(state.sort, onSort) }
+            item(key = "sort", contentType = "sort") { SortChips(state.sort, onSort) }
             when {
-                state.loading -> item {
+                state.loading -> item(key = "loading", contentType = "loading") {
                     Box(
                         Modifier
                             .fillMaxWidth()
@@ -139,11 +174,19 @@ fun AppsContent(
                         contentAlignment = Alignment.Center,
                     ) { CircularProgressIndicator() }
                 }
-                visible.isEmpty() -> item {
-                    EmptyState(Icons.Rounded.Apps, stringResource(R.string.files_empty), "")
+                visible.isEmpty() -> item(key = "empty", contentType = "empty") {
+                    if (state.sort == AppSort.AUTOSTART) {
+                        EmptyState(
+                            AppIcons.TaskAlt,
+                            stringResource(R.string.apps_autostart_empty),
+                            stringResource(R.string.apps_autostart_empty_desc),
+                        )
+                    } else {
+                        EmptyState(AppIcons.Apps, stringResource(R.string.files_empty), stringResource(R.string.apps_empty_desc))
+                    }
                 }
                 else -> {
-                    item {
+                    item(key = "count", contentType = "count") {
                         Text(
                             pluralStringResource(R.plurals.apps_count, visible.size, visible.size),
                             style = MaterialTheme.typography.labelLarge,
@@ -151,7 +194,7 @@ fun AppsContent(
                             modifier = Modifier.padding(vertical = 8.dp),
                         )
                     }
-                    items(visible, key = { it.packageName }) { app ->
+                    items(visible, key = { it.packageName }, contentType = { "app" }) { app ->
                         AppRow(
                             app = app,
                             sort = state.sort,
@@ -197,6 +240,7 @@ private fun AppRow(app: AppEntry, sort: AppSort, checked: Boolean, now: Long, on
     Row(
         Modifier
             .fillMaxWidth()
+            .clip(MaterialTheme.shapes.small)
             .clickable(onClick = onOpen)
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -217,11 +261,10 @@ private fun AppRow(app: AppEntry, sort: AppSort, checked: Boolean, now: Long, on
                 overflow = TextOverflow.Ellipsis,
             )
             if (app.isSystem || app.startsAtBoot || app.ignoresBatteryOptimizations) {
-                Row(
-                    Modifier
-                        .padding(top = 2.dp)
-                        .horizontalScroll(rememberScrollState()),
+                FlowRow(
+                    Modifier.padding(top = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     if (app.isSystem) Tag(stringResource(R.string.apps_system_badge))
                     if (app.startsAtBoot) {

@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.ui.navigation
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -7,18 +8,16 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
+import com.ikeralvaro.phonecleaner.ui.components.LocalBottomBarPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -62,10 +61,10 @@ import com.ikeralvaro.phonecleaner.feature.settings.SettingsScreen
 private data class TopLevel(val route: String, val label: Int, val icon: ImageVector)
 
 private val TOP_LEVEL = listOf(
-    TopLevel(Routes.HOME, R.string.nav_home, Icons.Rounded.Home),
-    TopLevel(Routes.APPS, R.string.nav_apps, Icons.Rounded.Apps),
-    TopLevel(Routes.FILES, R.string.nav_files, Icons.Rounded.FolderOpen),
-    TopLevel(Routes.SYSTEM, R.string.nav_system, Icons.Rounded.Speed),
+    TopLevel(Routes.HOME, R.string.nav_home, AppIcons.Home),
+    TopLevel(Routes.APPS, R.string.nav_apps, AppIcons.Apps),
+    TopLevel(Routes.FILES, R.string.nav_files, AppIcons.FolderOpen),
+    TopLevel(Routes.SYSTEM, R.string.nav_system, AppIcons.Speed),
 )
 
 @Composable
@@ -79,17 +78,22 @@ fun PhoneCleanerRoot(showOnboarding: Boolean) {
     // El destino inicial se fija una vez: al terminar el onboarding se navega a Inicio sin rehacer el grafo.
     val startDestination = remember { if (showOnboarding) Routes.ONBOARDING else Routes.HOME }
 
+    // Surface a pantalla completa: el fondo de la ventana sigue el tema elegido en la app (no solo el del sistema).
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    // Sin insets en la raíz: cada pantalla gestiona los suyos (la cabecera degradada llega bajo la barra de estado).
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (currentRoute in Routes.topLevel) BottomBar(navController, currentRoute)
         },
     ) { padding ->
+        // El contenido se dibuja detrás de la barra píldora; las pestañas añaden este relleno dentro de su lista.
+        CompositionLocalProvider(LocalBottomBarPadding provides padding.calculateBottomPadding()) {
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = Modifier
-                .padding(padding)
-                .consumeWindowInsets(padding),
+            modifier = Modifier.fillMaxSize(),
             enterTransition = { fadeIn(tween(220)) + slideInHorizontally(tween(260)) { it / 12 } },
             exitTransition = { fadeOut(tween(160)) },
             popEnterTransition = { fadeIn(tween(220)) },
@@ -170,6 +174,8 @@ fun PhoneCleanerRoot(showOnboarding: Boolean) {
                 MediaReviewScreen(mediaViewModel, category, onBack = { navController.popBackStack() })
             }
         }
+        }
+    }
     }
 }
 

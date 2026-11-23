@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.settings
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,12 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Block
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -52,7 +47,13 @@ import com.ikeralvaro.phonecleaner.core.permissions.PermissionSnapshot
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionActions
 import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionSnapshot
 import com.ikeralvaro.phonecleaner.core.permissions.startSafely
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
+import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
+import com.ikeralvaro.phonecleaner.ui.components.GradientHeader
+import com.ikeralvaro.phonecleaner.ui.components.listPadding
+import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.draw.clip
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 import kotlinx.coroutines.launch
 
@@ -110,13 +111,15 @@ fun SettingsContent(
     onAdsPrivacy: () -> Unit = {},
     onPrivacyPolicy: () -> Unit = {},
 ) {
-    Scaffold(topBar = { PhoneCleanerTopBar(stringResource(R.string.settings_title), onBack = onBack) }) { padding ->
+    Scaffold(
+        topBar = { GradientHeader(stringResource(R.string.settings_title), onBack = onBack) },
+        contentWindowInsets = WindowInsets(0),
+    ) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(listPadding(padding)),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             RemoveAdsCard(settings.premium, ads, onRemoveAds)
@@ -183,7 +186,10 @@ fun SettingsContent(
             }
 
             SectionCard(title = stringResource(R.string.settings_about)) {
-                Text(stringResource(R.string.app_name) + " · " + stringResource(R.string.settings_version, version), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    stringResource(R.string.join_dot, stringResource(R.string.app_name), stringResource(R.string.settings_version, version)),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     stringResource(R.string.settings_privacy),
@@ -191,7 +197,6 @@ fun SettingsContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
@@ -202,11 +207,12 @@ private fun RemoveAdsCard(premium: Boolean, ads: AdsSettingsState, onRemoveAds: 
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        border = BorderStroke(1.dp, cardBorderColor()),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    if (premium) Icons.Rounded.Favorite else Icons.Rounded.Block,
+                    if (premium) AppIcons.Favorite else AppIcons.Block,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                 )
@@ -225,12 +231,11 @@ private fun RemoveAdsCard(premium: Boolean, ads: AdsSettingsState, onRemoveAds: 
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
                 Spacer(Modifier.height(12.dp))
-                Button(onClick = onRemoveAds, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        ads.price?.let { stringResource(R.string.remove_ads_buy, it) }
-                            ?: stringResource(R.string.remove_ads_buy_no_price),
-                    )
-                }
+                BigActionButton(
+                    text = ads.price?.let { stringResource(R.string.remove_ads_buy, it) }
+                        ?: stringResource(R.string.remove_ads_buy_no_price),
+                    onClick = onRemoveAds,
+                )
                 when (ads.message) {
                     PurchaseMessage.UNAVAILABLE -> MessageText(stringResource(R.string.remove_ads_unavailable))
                     PurchaseMessage.ERROR -> MessageText(stringResource(R.string.remove_ads_error))
@@ -252,7 +257,8 @@ private fun LinkRow(title: String, description: String?, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clip(MaterialTheme.shapes.small)
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -262,7 +268,7 @@ private fun LinkRow(title: String, description: String?, onClick: () -> Unit) {
                 Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(AppIcons.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -280,7 +286,7 @@ private fun PermissionRow(title: Int, description: Int, granted: Boolean, onGran
         }
         Spacer(Modifier.width(8.dp))
         if (granted) {
-            Icon(Icons.Rounded.CheckCircle, contentDescription = stringResource(R.string.granted), tint = MaterialTheme.colorScheme.primary)
+            Icon(AppIcons.CheckCircle, contentDescription = stringResource(R.string.granted), tint = MaterialTheme.colorScheme.primary)
         } else {
             TextButton(onClick = onGrant) { Text(stringResource(R.string.action_grant)) }
         }

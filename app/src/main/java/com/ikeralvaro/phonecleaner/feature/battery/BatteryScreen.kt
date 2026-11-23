@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.battery
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import android.content.Intent
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
@@ -13,15 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BatterySaver
-import androidx.compose.material.icons.rounded.Brightness6
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -44,7 +39,20 @@ import com.ikeralvaro.phonecleaner.feature.apps.AppEntry
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
 import com.ikeralvaro.phonecleaner.ui.components.CategoryRow
 import com.ikeralvaro.phonecleaner.ui.components.KeyValueRow
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
+import com.ikeralvaro.phonecleaner.ui.components.GradientHeader
+import com.ikeralvaro.phonecleaner.ui.components.SecondaryButton
+import com.ikeralvaro.phonecleaner.ui.components.bottomContentPadding
+import com.ikeralvaro.phonecleaner.ui.components.formatNumber
+import com.ikeralvaro.phonecleaner.ui.components.percentOf
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 import com.ikeralvaro.phonecleaner.ui.components.UsageRing
 import com.ikeralvaro.phonecleaner.ui.components.currentLocale
@@ -87,20 +95,24 @@ fun BatteryContent(
     onOpenBoost: () -> Unit,
     onUnrestrictedSettings: () -> Unit,
 ) {
-    Scaffold(topBar = { PhoneCleanerTopBar(stringResource(R.string.battery_title), onBack = onBack) }) { padding ->
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = bottomContentPadding() + 12.dp),
+    ) {
+        BatteryHeader(state.battery, onBack)
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+            Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            BatteryHeader(state.battery)
             state.battery?.let { DetailsCard(it) }
 
             SectionCard(title = stringResource(R.string.battery_autostart)) {
-                if (state.autostartApps.isEmpty() && !state.loadingApps) {
+                if (state.loadingApps && state.autostartApps.isEmpty()) {
+                    LoadingRow()
+                } else if (state.autostartApps.isEmpty()) {
                     Text(stringResource(R.string.battery_autostart_none), style = MaterialTheme.typography.bodyMedium)
                 } else {
                     state.autostartApps.take(MAX_AUTOSTART_ROWS).forEach { app ->
@@ -124,50 +136,71 @@ fun BatteryContent(
             }
 
             SectionCard(title = stringResource(R.string.battery_unrestricted)) {
-                if (state.unrestrictedApps.isEmpty() && !state.loadingApps) {
+                if (state.loadingApps && state.unrestrictedApps.isEmpty()) {
+                    LoadingRow()
+                } else if (state.unrestrictedApps.isEmpty()) {
                     Text(stringResource(R.string.battery_unrestricted_none), style = MaterialTheme.typography.bodyMedium)
                 } else {
                     state.unrestrictedApps.forEach { app ->
                         AppUsageRow(app, null) { onOpenApp(app.packageName) }
                     }
-                    TextButton(onClick = onUnrestrictedSettings) { Text(stringResource(R.string.action_open_settings)) }
+                    Spacer(Modifier.height(8.dp))
+                    SecondaryButton(stringResource(R.string.action_open_settings), onUnrestrictedSettings)
                 }
             }
 
             SectionCard(title = stringResource(R.string.battery_tips)) {
-                CategoryRow(stringResource(R.string.tip_saver), stringResource(R.string.tip_saver_desc), "", icon = Icons.Rounded.BatterySaver, onClick = onBatterySaver)
-                CategoryRow(stringResource(R.string.tip_display), stringResource(R.string.tip_display_desc), "", icon = Icons.Rounded.Brightness6, onClick = onDisplay)
-                CategoryRow(stringResource(R.string.tip_dark), stringResource(R.string.tip_dark_desc), "", icon = Icons.Rounded.DarkMode, onClick = onDisplay)
-                CategoryRow(stringResource(R.string.tip_boost), stringResource(R.string.tip_boost_desc), "", icon = Icons.Rounded.Memory, onClick = onOpenBoost)
+                CategoryRow(stringResource(R.string.tip_saver), stringResource(R.string.tip_saver_desc), "", icon = AppIcons.BatterySaver, onClick = onBatterySaver)
+                CategoryRow(stringResource(R.string.tip_display), stringResource(R.string.tip_display_desc), "", icon = AppIcons.Brightness6, onClick = onDisplay)
+                CategoryRow(stringResource(R.string.tip_dark), stringResource(R.string.tip_dark_desc), "", icon = AppIcons.DarkMode, onClick = onDisplay)
+                CategoryRow(stringResource(R.string.tip_boost), stringResource(R.string.tip_boost_desc), "", icon = AppIcons.Memory, onClick = onOpenBoost)
             }
-            Spacer(Modifier.height(12.dp))
         }
+    }
     }
 }
 
 @Composable
-private fun BatteryHeader(battery: BatterySnapshot?) {
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+private fun LoadingRow() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        val label = stringResource(R.string.loading)
+        CircularProgressIndicator(Modifier.semantics { contentDescription = label })
+    }
+}
+
+/** Cabecera degradada con el medidor de carga, como la de Inicio. */
+@Composable
+private fun BatteryHeader(battery: BatterySnapshot?, onBack: () -> Unit) {
+    GradientHeader(stringResource(R.string.battery_title), onBack = onBack) {
         val warning = battery != null && battery.levelPercent <= 15
         UsageRing(
             progress = (battery?.levelPercent ?: 0) / 100f,
             size = 180.dp,
             strokeWidth = 16.dp,
-            color = if (warning) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+            color = if (warning) WarningOnGradient else Color.White,
+            trackColor = Color.White.copy(alpha = 0.22f),
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    battery?.let { "${it.levelPercent} %" } ?: "—",
+                    battery?.let { percentOf(it.levelPercent) } ?: "—",
                     style = MaterialTheme.typography.displaySmall,
-                    color = if (warning) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary,
+                    color = Color.White,
                 )
                 battery?.let {
-                    Text(stringResource(it.status.label()), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(it.status.label()), style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
                 }
             }
         }
     }
 }
+
+/** Ámbar claro: se distingue sobre el degradado verde para avisar de batería baja. */
+private val WarningOnGradient = Color(0xFFFDE68A)
 
 @Composable
 private fun DetailsCard(battery: BatterySnapshot) {
@@ -176,8 +209,8 @@ private fun DetailsCard(battery: BatterySnapshot) {
         battery.temperatureC?.let { KeyValueRow(stringResource(R.string.battery_temperature), formatCelsius(it, locale)) }
         KeyValueRow(stringResource(R.string.battery_health), stringResource(battery.health.label()))
         battery.voltageMv?.let { KeyValueRow(stringResource(R.string.battery_voltage), String.format(locale, "%.2f V", it / 1000.0)) }
-        battery.currentMa?.let { KeyValueRow(stringResource(R.string.battery_current), "$it mA") }
-        battery.estimatedCapacityMah?.let { KeyValueRow(stringResource(R.string.battery_capacity), "$it mAh") }
+        battery.currentMa?.let { KeyValueRow(stringResource(R.string.battery_current), formatNumber(it.toLong(), locale) + " mA") }
+        battery.estimatedCapacityMah?.let { KeyValueRow(stringResource(R.string.battery_capacity), formatNumber(it.toLong(), locale) + " mAh") }
         battery.cycleCount?.let { KeyValueRow(stringResource(R.string.battery_cycles), it.toString()) }
         battery.technology?.let { KeyValueRow(stringResource(R.string.battery_technology), it) }
         KeyValueRow(stringResource(R.string.battery_source), stringResource(battery.source.label()))
@@ -186,17 +219,20 @@ private fun DetailsCard(battery: BatterySnapshot) {
 
 @Composable
 private fun AppUsageRow(app: AppEntry, value: String?, onClick: () -> Unit) {
+    // Toda la fila es pulsable (no solo la flecha), con rol de botón para TalkBack.
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .clip(MaterialTheme.shapes.small)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AppIcon(app.packageName, app.label, size = 36.dp)
         Spacer(Modifier.width(12.dp))
         Text(app.label, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (value != null) Text(value, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-        TextButton(onClick = onClick) { Text("›") }
+        Icon(AppIcons.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
