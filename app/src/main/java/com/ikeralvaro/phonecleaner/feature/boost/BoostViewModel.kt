@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.boost
 
+import android.app.Activity
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,6 +54,16 @@ class BoostViewModel(private val container: AppContainer) : ViewModel() {
                 it.copy(phase = BoostPhase.DONE, memory = memory, liveUsedFraction = null, stage = null, freedBytes = result.freedBytes)
             }
         }
+    }
+
+    /**
+     * Para ON_STOP de la pantalla: cancela solo si la actividad no se está recreando por un cambio de
+     * configuración (girar la pantalla, modo oscuro...). Si el ViewModel se destruye de verdad, viewModelScope
+     * se cancela en onCleared y el booster suelta la memoria igualmente.
+     */
+    fun cancelIfNotChangingConfigurations(activity: Activity?) {
+        if (activity?.isChangingConfigurations == true) return
+        cancel()
     }
 
     /** Al salir de la pantalla se cancela: el booster suelta la memoria en su bloque finally. */

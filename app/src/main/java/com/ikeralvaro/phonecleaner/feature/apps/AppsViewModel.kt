@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ikeralvaro.phonecleaner.AppContainer
 import com.ikeralvaro.phonecleaner.core.util.IntentQueue
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,8 @@ data class AppsUiState(
     val selected: Set<String> = emptySet(),
     val now: Long = System.currentTimeMillis(),
 ) {
-    val visibleApps: List<AppEntry> get() = AppsLogic.sort(apps, sort)
+    /** Se ordena una vez al crear el estado (cuando cambian las apps o el orden), no en cada recomposición. */
+    val visibleApps: List<AppEntry> = AppsLogic.sort(apps, sort)
 }
 
 class AppsViewModel(private val container: AppContainer) : ViewModel() {
@@ -27,10 +29,13 @@ class AppsViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<AppsUiState> = _state.asStateFlow()
     private val queue = IntentQueue<String>()
 
-    fun load() {
-        if (queue.isRunning) return
-        viewModelScope.launch {
-            val apps = container.appRepository.loadApps()
+    private var loadJob: Job? = null
+
+    /** Una sola carga a la vez: las llamadas repetidas mientras carga se ignoran. */
+    fun load(forceRefresh: Boolean = false) {
+        if (queue.isRunning || loadJob?.isActive == true) return
+        loadJob = viewModelScope.launch {
+            val apps = container.appRepository.loadApps(forceRefresh = forceRefresh)
             val installed = apps.map { it.packageName }.toSet()
             _state.update {
                 it.copy(loading = false, apps = apps, selected = it.selected intersect installed, now = System.currentTimeMillis())
@@ -54,7 +59,9 @@ class AppsViewModel(private val container: AppContainer) : ViewModel() {
         if (next == null) {
             queue.cancel()
             clearSelection()
-            load()
+            // Puede que se haya desinstalado algo: se descarta la lista guardada.
+            container.appRepository.invalidate()
+            load(forceRefresh = true)
         }
         return next
     }

@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
 enum class CleanerPhase { IDLE, SCANNING, RESULTS, CLEANING, DONE }
 
 data class JunkGroup(val category: JunkCategory, val items: List<JunkItem>) {
-    val totalBytes: Long get() = items.sumOf { it.sizeBytes }
+    val totalBytes: Long = items.sumOf { it.sizeBytes }
 }
 
 /** Resultado de "Vaciar caché de todas las apps": lo liberado se mide con el espacio libre antes y después. */
@@ -34,9 +34,11 @@ data class CleanerUiState(
     val hasFilesAccess: Boolean = false,
     val freedBytes: Long = 0L,
 ) {
-    val totalFoundBytes: Long get() = groups.sumOf { it.totalBytes }
-    val selectedItems: List<JunkItem> get() = groups.flatMap { it.items }.filter { it.path in selectedPaths }
-    val selectedBytes: Long get() = selectedItems.sumOf { it.sizeBytes }
+    // Se calculan una vez por estado (no en cada recomposición).
+    val totalFoundBytes: Long = groups.sumOf { it.totalBytes }
+    val selectedItems: List<JunkItem> = groups.flatMap { it.items }.filter { it.path in selectedPaths }
+    val selectedBytes: Long = selectedItems.sumOf { it.sizeBytes }
+    val selectedCount: Int = selectedItems.size
 }
 
 class CleanerViewModel(private val container: AppContainer) : ViewModel() {
@@ -99,13 +101,19 @@ class CleanerViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Justo antes de abrir la pantalla del sistema "Vaciar caché": se anota el espacio libre. */
     fun beforeAppCacheClear() {
-        freeBeforeCacheClear = container.storageReader.read().freeBytes
+        viewModelScope.launch {
+            freeBeforeCacheClear = withContext(Dispatchers.IO) { container.storageReader.read().freeBytes }
+        }
     }
 
-    /** Al volver: se mide de nuevo el espacio libre y se calcula lo liberado de verdad. */
-    fun onAppCacheCleared() {
+    /**
+     * Al volver: se mide de nuevo el espacio libre y se calcula lo liberado de verdad.
+     * [resultOk]: el sistema devolvió RESULT_OK (si el usuario canceló no se registra nada).
+     */
+    fun onAppCacheCleared(resultOk: Boolean = true) {
         val before = freeBeforeCacheClear ?: return
         freeBeforeCacheClear = null
+        if (!resultOk) return
         viewModelScope.launch {
             delay(1_000) // el sistema termina de borrar en segundo plano
             val after = withContext(Dispatchers.IO) { container.storageReader.read().freeBytes }

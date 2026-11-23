@@ -56,14 +56,27 @@ class MediaSaver(private val context: Context) {
     private fun saveLegacy(temp: File, original: MediaItem): Uri? {
         val source = original.path?.let(::File) ?: return null
         val dir = source.parentFile ?: return null
-        val target = File(dir, "${source.nameWithoutExtension}_comp.${source.extension}")
+        val target = uniqueTarget(dir, source.nameWithoutExtension, source.extension)
         return try {
-            temp.copyTo(target, overwrite = true)
+            // Nunca se sobrescribe: uniqueTarget da un nombre libre y copyTo falla si apareció entretanto.
+            temp.copyTo(target, overwrite = false)
             if (original.dateTakenMs > 0) target.setLastModified(original.dateTakenMs)
             MediaScannerConnection.scanFile(context, arrayOf(target.path), null, null)
             Uri.fromFile(target)
         } catch (_: Exception) {
             null
         }
+    }
+
+    /** "foto_comp.jpg", y si existe "foto_comp_2.jpg", "foto_comp_3.jpg"... */
+    private fun uniqueTarget(dir: File, base: String, extension: String): File {
+        val suffix = if (extension.isEmpty()) "" else ".$extension"
+        var target = File(dir, "${base}_comp$suffix")
+        var n = 2
+        while (target.exists()) {
+            target = File(dir, "${base}_comp_$n$suffix")
+            n++
+        }
+        return target
     }
 }

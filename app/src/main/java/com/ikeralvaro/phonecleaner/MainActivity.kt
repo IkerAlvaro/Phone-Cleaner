@@ -48,11 +48,13 @@ class MainActivity : ComponentActivity() {
                 onDispose { }
             }
 
-            // Consentimiento de anuncios (GDPR) y compra «Quitar anuncios»: después del onboarding.
+            // Consentimiento de anuncios (GDPR) y compra «Quitar anuncios»: después del onboarding y una sola vez
+            // por proceso (girar la pantalla recrea la actividad, pero no vuelve a pedirlo). Si es premium,
+            // AdsManager no pide consentimiento ni inicializa el SDK de anuncios.
             LaunchedEffect(current.onboardingDone) {
                 if (current.onboardingDone) {
-                    container.billingManager.connect()
-                    container.consentManager.gather(this@MainActivity) { container.adsManager.initializeIfPossible() }
+                    container.billingManager.connectOnce()
+                    container.adsManager.startOnce(this@MainActivity)
                 }
             }
 

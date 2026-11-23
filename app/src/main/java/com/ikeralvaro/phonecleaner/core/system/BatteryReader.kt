@@ -9,7 +9,11 @@ import android.os.Build
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -87,11 +91,14 @@ class BatteryReader(private val context: Context) {
         return parse(intent)
     }
 
-    /** Emite un valor nuevo cada vez que cambia el estado de la batería. */
+    /**
+     * Emite un valor nuevo cada vez que cambia el estado de la batería. El intent se procesa fuera del hilo
+     * principal (las propiedades de BatteryManager llaman al sistema).
+     */
     fun observe(): Flow<BatterySnapshot> = callbackFlow {
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
-                trySend(parse(intent))
+                trySend(intent)
             }
         }
         ContextCompat.registerReceiver(
@@ -101,7 +108,7 @@ class BatteryReader(private val context: Context) {
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
         awaitClose { context.unregisterReceiver(receiver) }
-    }
+    }.conflate().map(::parse).flowOn(Dispatchers.Default)
 
     private fun parse(intent: Intent): BatterySnapshot {
         val level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)

@@ -17,6 +17,8 @@ data class JunkItem(
     val label: String,
     val sizeBytes: Long,
     val isDirectory: Boolean,
+    /** Fecha de modificación al escanear: si cambia antes de borrar, el elemento se salta. */
+    val lastModifiedMs: Long = 0L,
 )
 
 data class ScanProgress(val filesScanned: Int, val bytesFound: Long, val currentPath: String)
@@ -37,14 +39,24 @@ class JunkScanner(
         walker.results.mapValues { (_, items) -> items.sortedByDescending { it.sizeBytes } }
     }
 
-    /** Borra los elementos y devuelve los bytes realmente liberados. */
+    /**
+     * Borra los elementos y devuelve los bytes realmente liberados. Se salta lo que haya cambiado desde
+     * el escaneo (fecha o tamaño distintos): puede que el usuario o una app lo esté usando.
+     */
     suspend fun delete(items: Collection<JunkItem>): Long = withContext(Dispatchers.IO) {
         var freed = 0L
         val deletedPaths = mutableListOf<String>()
+        val legacyScan = Build.VERSION.SDK_INT < 30
         for (item in items) {
             currentCoroutineContext().ensureActive()
             val file = File(item.path)
-            if (!file.exists()) continue
+            if (!file.exists() || changedSinceScan(file, item)) continue
+            // Android 10 o inferior: hay que avisar al índice multimedia de cada archivo de la carpeta.
+            val contained = if (legacyScan && file.isDirectory) {
+                file.walkTopDown().filter { it.isFile }.map { it.path }.toList()
+            } else {
+                emptyList()
+            }
             val ok = when {
                 !file.isDirectory -> file.delete()
                 item.sizeBytes == 0L -> deleteEmptyTree(file)
@@ -53,13 +65,19 @@ class JunkScanner(
             if (ok) {
                 freed += item.sizeBytes
                 deletedPaths += item.path
+                deletedPaths += contained
             }
         }
         // En Android 10 o inferior el índice multimedia no se entera solo de los borrados.
-        if (Build.VERSION.SDK_INT < 30 && deletedPaths.isNotEmpty()) {
+        if (legacyScan && deletedPaths.isNotEmpty()) {
             MediaScannerConnection.scanFile(context, deletedPaths.toTypedArray(), null, null)
         }
         freed
+    }
+
+    private fun changedSinceScan(file: File, item: JunkItem): Boolean {
+        if (item.lastModifiedMs > 0 && file.lastModified() != item.lastModifiedMs) return true
+        return !item.isDirectory && file.length() != item.sizeBytes
     }
 
     private inner class Walker(private val now: Long, private val onProgress: (ScanProgress) -> Unit) {
@@ -87,13 +105,17 @@ class JunkScanner(
                     }
                     if (JunkRules.isThumbnailDir(childRel)) {
                         val size = dirSize(child)
-                        if (size > 0) add(JunkCategory.THUMBNAILS, JunkItem(child.path, childRel, size, isDirectory = true))
+                        if (size > 0) add(JunkCategory.THUMBNAILS, JunkItem(child.path, childRel, size, true, child.lastModified()))
                         empty = false
                         continue
                     }
                     val residual = JunkRules.residualPackage(childRel)
                     if (residual != null && !JunkRules.isSystemPackage(residual) && !apps.isInstalled(residual)) {
-                        add(JunkCategory.RESIDUAL_FOLDERS, JunkItem(child.path, residual, dirSize(child), isDirectory = true))
+                        // Puede ser de una app sin icono: solo es "posible resto" si lleva tiempo sin tocarse.
+                        val modified = child.lastModified()
+                        if (JunkRules.isPossibleLeftover(modified, now)) {
+                            add(JunkCategory.RESIDUAL_FOLDERS, JunkItem(child.path, residual, dirSize(child), true, modified))
+                        }
                         empty = false
                         continue
                     }
@@ -110,27 +132,34 @@ class JunkScanner(
             }
             if (empty && JunkRules.isDeletableEmptyDir(rel)) return true
             // Esta carpeta se queda: sus subcarpetas vacías sí son basura.
-            emptyChildren.forEach { add(JunkCategory.EMPTY_FOLDERS, JunkItem(it.path, relativeOf(it), 0L, isDirectory = true)) }
+            emptyChildren.forEach {
+                add(JunkCategory.EMPTY_FOLDERS, JunkItem(it.path, relativeOf(it), 0L, true, it.lastModified()))
+            }
             return false
         }
 
         private fun visitFile(file: File, rel: String) {
             filesScanned++
             if (filesScanned % 250 == 0) onProgress(ScanProgress(filesScanned, bytesFound, rel))
-            var category = JunkRules.classifyFile(rel, file.lastModified(), now) ?: return
+            val modified = file.lastModified()
+            var category = JunkRules.classifyFile(rel, modified, now) ?: return
             if (category == JunkCategory.APK_OTHER) {
                 val info = apps.apkInfo(file.path)
                 val installed = info?.let { apps.installedVersionCode(it.first) }
                 if (info != null && installed != null && installed >= info.second) category = JunkCategory.APK_INSTALLED
             }
-            add(category, JunkItem(file.path, rel, file.length(), isDirectory = false))
+            add(category, JunkItem(file.path, rel, file.length(), false, modified))
         }
 
+        /** Caché propia, salvo la carpeta de compresión en curso y la caché de miniaturas de Coil. */
         fun addOwnCache() {
             listOfNotNull(context.cacheDir, context.externalCacheDir).forEach { dir ->
-                dir.listFiles()?.forEach { child ->
+                dir.listFiles()?.filter { it.name !in OWN_CACHE_EXCLUDED }?.forEach { child ->
                     val size = if (child.isDirectory) dirSize(child) else child.length()
-                    if (size > 0) add(JunkCategory.TEMP_FILES, JunkItem(child.path, "Phone Cleaner/${child.name}", size, child.isDirectory))
+                    if (size > 0) add(
+                            JunkCategory.TEMP_FILES,
+                            JunkItem(child.path, "Phone Cleaner/${child.name}", size, child.isDirectory, child.lastModified()),
+                        )
                 }
             }
             onProgress(ScanProgress(filesScanned, bytesFound, ""))
@@ -155,6 +184,10 @@ class JunkScanner(
         if (dir.walkTopDown().any { it.isFile }) return false
         dir.walkBottomUp().forEach { it.delete() }
         return !dir.exists()
+    }
+
+    private companion object {
+        val OWN_CACHE_EXCLUDED = setOf("compress", "image_cache")
     }
 
     private fun dirSize(dir: File): Long = dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }

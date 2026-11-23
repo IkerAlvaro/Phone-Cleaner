@@ -16,6 +16,7 @@ import androidx.work.workDataOf
 import com.ikeralvaro.phonecleaner.AppContainer
 import com.ikeralvaro.phonecleaner.feature.media.MediaItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,6 +40,8 @@ data class CompressRun(
     val compressedCount: Int = 0,
     val originals: List<String> = emptyList(),
     val originalsTrashed: Boolean = false,
+    /** Registro de originales de esta ejecución (uno por trabajo). */
+    val originalsFile: String? = null,
 )
 
 @Immutable
@@ -55,8 +58,10 @@ data class CompressUiState(
     val justFinished: Boolean = false,
 ) {
     val visible: List<CompressCandidate> get() = if (tab == CompressTab.PHOTOS) photos else videos
-    val selectedCandidates: List<CompressCandidate> get() = (photos + videos).filter { it.item.id in selected }
-    val estimatedSavings: Long get() = selectedCandidates.sumOf { it.savingBytes }
+    // Se calculan una vez por estado, no en cada recomposición.
+    val selectedCandidates: List<CompressCandidate> =
+        if (selected.isEmpty()) emptyList() else (photos + videos).filter { it.item.id in selected }
+    val estimatedSavings: Long = selectedCandidates.sumOf { it.savingBytes }
 }
 
 class CompressViewModel(private val container: AppContainer) : ViewModel() {
@@ -65,12 +70,16 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
     val state: StateFlow<CompressUiState> = _state.asStateFlow()
     private var images: List<MediaItem> = emptyList()
     private var videos: List<MediaItem> = emptyList()
+    private var loadJob: Job? = null
 
     init {
         viewModelScope.launch {
             workManager.getWorkInfosForUniqueWorkFlow(CompressWorker.UNIQUE_NAME).collect { infos ->
                 val info = infos.lastOrNull() ?: return@collect
                 val run = toRun(info)
+                // start() ya marcó RUNNING: un estado antiguo (FINISHED de una ejecución anterior) no lo pisa.
+                if (startingWorkId != null && info.id != startingWorkId) return@collect
+                startingWorkId = null
                 val finishedNow = run.state == RunState.FINISHED && _state.value.run.state == RunState.RUNNING
                 _state.update {
                     it.copy(
@@ -83,14 +92,16 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** Una sola carga a la vez. Solo se piden a MediaStore los JPEG y vídeos con tamaño mínimo. */
     fun load() {
-        viewModelScope.launch {
+        if (loadJob?.isActive == true) return
+        loadJob = viewModelScope.launch {
             if (!container.permissionManager.hasMediaAccess()) {
                 _state.update { it.copy(loading = false, hasAccess = false) }
                 return@launch
             }
-            images = container.mediaRepository.images()
-            videos = container.mediaRepository.videos()
+            images = container.mediaRepository.jpegImages(CompressionPlanner.MIN_PHOTO_BYTES)
+            videos = container.mediaRepository.videos(CompressionPlanner.MIN_VIDEO_BYTES)
             recompute(selectAllPhotos = _state.value.loading)
         }
     }
@@ -109,18 +120,31 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
         s.copy(selected = if (select) s.selected + ids else s.selected - ids)
     }
 
+    private var startingWorkId: java.util.UUID? = null
+
     fun start() {
         val s = _state.value
         val items = s.selectedCandidates.map { it.item }
         if (items.isEmpty() || s.run.state == RunState.RUNNING) return
-        val jobFile = File(container.appContext.filesDir, "compress/job.txt")
+        // Se marca RUNNING ya (en el hilo principal): un segundo toque no lanza otro trabajo.
+        _state.update { it.copy(run = CompressRun(RunState.RUNNING, 0, items.size), selected = emptySet(), justFinished = false) }
+        val request = OneTimeWorkRequestBuilder<CompressWorker>()
+        val workId = java.util.UUID.randomUUID()
+        startingWorkId = workId
+        val jobFile = File(container.appContext.filesDir, "compress/job-$workId.txt")
         viewModelScope.launch {
             withContext(Dispatchers.IO) { CompressJobs.write(jobFile, items) }
-            val request = OneTimeWorkRequestBuilder<CompressWorker>()
-                .setInputData(workDataOf(CompressWorker.KEY_JOB_FILE to jobFile.path, CompressWorker.KEY_MODE to s.mode.name))
+            val work = request
+                .setId(workId)
+                .setInputData(
+                    workDataOf(
+                        CompressWorker.KEY_JOB_FILE to jobFile.path,
+                        CompressWorker.KEY_MODE to s.mode.name,
+                        CompressWorker.KEY_TOTAL to items.size,
+                    ),
+                )
                 .build()
-            workManager.enqueueUniqueWork(CompressWorker.UNIQUE_NAME, ExistingWorkPolicy.KEEP, request)
-            _state.update { it.copy(run = CompressRun(RunState.RUNNING, 0, items.size), selected = emptySet()) }
+            workManager.enqueueUniqueWork(CompressWorker.UNIQUE_NAME, ExistingWorkPolicy.KEEP, work)
         }
     }
 
@@ -139,18 +163,21 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
 
     fun onOriginalsTrashed(ok: Boolean) {
         if (!ok) return
-        originalsFile().delete()
+        deleteOriginalsFile()
         _state.update { it.copy(run = it.run.copy(originalsTrashed = true)) }
         load()
     }
 
     fun dismissResult() {
-        originalsFile().delete()
+        deleteOriginalsFile()
         workManager.pruneWork()
         _state.update { it.copy(run = CompressRun(), justFinished = false) }
     }
 
-    private fun originalsFile() = File(container.appContext.filesDir, ORIGINALS_FILE)
+    private fun deleteOriginalsFile() {
+        val path = _state.value.run.originalsFile ?: return
+        viewModelScope.launch(Dispatchers.IO) { File(path).delete() }
+    }
 
     private suspend fun recompute(selectAllPhotos: Boolean) {
         val mode = _state.value.mode
@@ -177,11 +204,7 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    companion object {
-        const val ORIGINALS_FILE = "compress/originals.txt"
-    }
-
-    private fun toRun(info: WorkInfo): CompressRun = when (info.state) {
+    private suspend fun toRun(info: WorkInfo): CompressRun = when (info.state) {
         WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING, WorkInfo.State.BLOCKED -> CompressRun(
             state = RunState.RUNNING,
             done = info.progress.getInt(CompressWorker.KEY_DONE, 0),
@@ -192,9 +215,12 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
         WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> CompressRun(state = RunState.FAILED)
     }
 
-    private fun finishedRun(data: Data): CompressRun {
-        val originals = data.getString(CompressWorker.KEY_ORIGINALS_FILE)?.let(::File)
-            ?.takeIf { it.exists() }?.readLines()?.filter { it.isNotBlank() }.orEmpty()
+    /** Lee el registro de originales en IO (no en el hilo principal). */
+    private suspend fun finishedRun(data: Data): CompressRun {
+        val path = data.getString(CompressWorker.KEY_ORIGINALS_FILE)
+        val originals = withContext(Dispatchers.IO) {
+            path?.let { CompressJobs.readOriginals(File(it)).map { o -> o.first } }.orEmpty()
+        }
         return CompressRun(
             state = RunState.FINISHED,
             done = data.getInt(CompressWorker.KEY_TOTAL, 0),
@@ -202,6 +228,7 @@ class CompressViewModel(private val container: AppContainer) : ViewModel() {
             savedBytes = data.getLong(CompressWorker.KEY_SAVED, 0L),
             compressedCount = data.getInt(CompressWorker.KEY_COMPRESSED, 0),
             originals = originals,
+            originalsFile = path,
         )
     }
 }

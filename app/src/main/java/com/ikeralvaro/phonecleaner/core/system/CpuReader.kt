@@ -32,18 +32,30 @@ object CpuMath {
 }
 
 class CpuReader(private val cpuRoot: File = File("/sys/devices/system/cpu")) {
-    fun read(): CpuSnapshot {
-        val cores = Runtime.getRuntime().availableProcessors()
-        val freqs = (0 until cores).map { i ->
+    private val cores = Runtime.getRuntime().availableProcessors()
+
+    /** Mínimo y máximo de cada núcleo: son fijos, se leen una sola vez. */
+    private val limits: List<Pair<Long?, Long?>> by lazy {
+        (0 until cores).map { i ->
             val dir = File(cpuRoot, "cpu$i/cpufreq")
+            CpuMath.parseKhz(readText(File(dir, "cpuinfo_min_freq"))) to
+                CpuMath.parseKhz(readText(File(dir, "cpuinfo_max_freq")))
+        }
+    }
+
+    private val soc: String by lazy { socName() }
+
+    fun read(): CpuSnapshot {
+        val freqs = (0 until cores).map { i ->
+            val (min, max) = limits[i]
             CoreFreq(
                 index = i,
-                curKhz = CpuMath.parseKhz(readText(File(dir, "scaling_cur_freq"))),
-                minKhz = CpuMath.parseKhz(readText(File(dir, "cpuinfo_min_freq"))),
-                maxKhz = CpuMath.parseKhz(readText(File(dir, "cpuinfo_max_freq"))),
+                curKhz = CpuMath.parseKhz(readText(File(cpuRoot, "cpu$i/cpufreq/scaling_cur_freq"))),
+                minKhz = min,
+                maxKhz = max,
             )
         }
-        return CpuSnapshot(cores, socName(), freqs, CpuMath.estimateLoad(freqs))
+        return CpuSnapshot(cores, soc, freqs, CpuMath.estimateLoad(freqs))
     }
 
     private fun readText(file: File): String? = try {

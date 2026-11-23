@@ -36,7 +36,9 @@ object AdFrequencyPolicy {
     ): Boolean {
         if (premium || !canRequestAds) return false
         if (history.tasksCompleted < FIRST_TASK_WITH_AD) return false
-        if (history.lastShownAt > 0 && now - history.lastShownAt < MIN_INTERVAL_MS) return false
+        // Si el reloj se atrasó (now < lastShownAt) no se bloquea indefinidamente: no se aplica el intervalo.
+        val elapsed = now - history.lastShownAt
+        if (history.lastShownAt > 0 && elapsed in 0 until MIN_INTERVAL_MS) return false
         val today = dayIndex(now, utcOffsetMs)
         val shownToday = if (history.day == today) history.shownToday else 0
         return shownToday < MAX_PER_DAY

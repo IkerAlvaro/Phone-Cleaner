@@ -35,6 +35,11 @@ data class MonitorUiState(
 
 class MonitorViewModel(private val container: AppContainer) : ViewModel() {
 
+    /** Modelo y versión no cambian: se calculan una vez. */
+    private val deviceModel = listOf(Build.MANUFACTURER.replaceFirstChar { it.uppercase() }, Build.MODEL)
+        .distinct().joinToString(" ")
+    private val androidVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
+
     private val ticker = flow {
         var tick = 0
         var storage: StorageSnapshot? = null
@@ -48,9 +53,8 @@ class MonitorViewModel(private val container: AppContainer) : ViewModel() {
                     memory = container.memoryReader.read(),
                     storage = storage,
                     device = DeviceInfo(
-                        model = listOf(Build.MANUFACTURER.replaceFirstChar { it.uppercase() }, Build.MODEL)
-                            .distinct().joinToString(" "),
-                        androidVersion = "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+                        model = deviceModel,
+                        androidVersion = androidVersion,
                         uptimeMs = SystemClock.elapsedRealtime(),
                     ),
                 ),
@@ -62,6 +66,7 @@ class MonitorViewModel(private val container: AppContainer) : ViewModel() {
 
     private val battery = container.batteryReader.observe()
         .onStart { container.batteryReader.read()?.let { emit(it) } }
+        .flowOn(Dispatchers.Default)
 
     /** Se actualiza cada segundo solo mientras la pantalla está visible. */
     val state: StateFlow<MonitorUiState> = combine(ticker, battery) { s, b -> s.copy(battery = b) }
