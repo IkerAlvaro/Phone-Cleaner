@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.apps
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,26 +10,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.StopCircle
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -40,9 +38,14 @@ import com.ikeralvaro.phonecleaner.core.permissions.startSafely
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.AppIcon
+import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
+import com.ikeralvaro.phonecleaner.ui.components.EmptyState
+import com.ikeralvaro.phonecleaner.ui.components.GradientHeader
 import com.ikeralvaro.phonecleaner.ui.components.KeyValueRow
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
+import com.ikeralvaro.phonecleaner.ui.components.SecondaryButton
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
+import com.ikeralvaro.phonecleaner.ui.components.bottomContentPadding
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 
 @Composable
 fun AppDetailScreen(packageName: String, onBack: () -> Unit) {
@@ -50,7 +53,7 @@ fun AppDetailScreen(packageName: String, onBack: () -> Unit) {
     val context = LocalContext.current
     var app by remember { mutableStateOf<AppEntry?>(null) }
     var loaded by remember { mutableStateOf(false) }
-    var refreshKey by remember { mutableStateOf(0) }
+    var refreshKey by remember { mutableIntStateOf(0) }
 
     // Se recarga al volver de Ajustes o del diálogo de desinstalación.
     LifecycleResumeEffect(Unit) {
@@ -81,37 +84,56 @@ fun AppDetailContent(
     onUninstall: () -> Unit,
     now: Long = System.currentTimeMillis(),
 ) {
-    Scaffold(topBar = { PhoneCleanerTopBar(app?.label.orEmpty(), onBack = onBack) }) { padding ->
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = bottomContentPadding() + 16.dp),
+    ) {
+        GradientHeader(app?.label ?: stringResource(R.string.app_detail_title), onBack = onBack) {
+            if (app != null) {
+                Box(
+                    Modifier
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .padding(10.dp),
+                ) { AppIcon(app.packageName, app.label, size = 64.dp) }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    listOfNotNull(app.versionName?.let { stringResource(R.string.app_detail_version, it) }, app.packageName)
+                        .joinToString(stringResource(R.string.separator_dot)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.9f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+            }
+        }
         if (app == null) {
             Box(
                 Modifier
-                    .fillMaxSize()
-                    .padding(padding),
+                    .fillMaxWidth()
+                    .padding(top = 48.dp),
                 contentAlignment = Alignment.Center,
-            ) { if (loading) CircularProgressIndicator() }
-            return@Scaffold
+            ) {
+                if (loading) {
+                    CircularProgressIndicator()
+                } else {
+                    EmptyState(
+                        AppIcons.Apps,
+                        stringResource(R.string.app_detail_not_found),
+                        stringResource(R.string.app_detail_not_found_desc),
+                        action = { SecondaryButton(stringResource(R.string.action_back), onBack) },
+                    )
+                }
+            }
+            return@Column
         }
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                AppIcon(app.packageName, app.label, size = 72.dp)
-                Spacer(Modifier.height(8.dp))
-                Text(app.label, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                Text(
-                    listOfNotNull(app.versionName?.let { stringResource(R.string.app_detail_version, it) }, app.packageName)
-                        .joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-
             SectionCard(title = stringResource(R.string.app_detail_size)) {
                 KeyValueRow(stringResource(R.string.app_detail_apk_size), formatBytes(app.apkBytes))
                 Text(
@@ -143,21 +165,10 @@ fun AppDetailContent(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Rounded.StopCircle, contentDescription = null)
-                Spacer(Modifier.padding(4.dp))
-                Text(stringResource(R.string.app_detail_stop))
-            }
-            OutlinedButton(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Rounded.Settings, contentDescription = null)
-                Spacer(Modifier.padding(4.dp))
-                Text(stringResource(R.string.app_detail_open_settings))
-            }
-            OutlinedButton(onClick = onUninstall, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Rounded.Delete, contentDescription = null)
-                Spacer(Modifier.padding(4.dp))
-                Text(stringResource(R.string.app_detail_uninstall))
-            }
+            BigActionButton(stringResource(R.string.app_detail_stop), onOpenSettings, icon = AppIcons.StopCircle)
+            SecondaryButton(stringResource(R.string.app_detail_open_settings), onOpenSettings, icon = AppIcons.Settings)
+            SecondaryButton(stringResource(R.string.app_detail_uninstall), onUninstall, icon = AppIcons.Delete, destructive = true)
         }
+    }
     }
 }

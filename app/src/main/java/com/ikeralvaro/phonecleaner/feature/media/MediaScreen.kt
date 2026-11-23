@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.media
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,14 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BurstMode
-import androidx.compose.material.icons.rounded.Compress
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.FolderZip
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Screenshot
-import androidx.compose.material.icons.rounded.VideoFile
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -38,7 +31,11 @@ import com.ikeralvaro.phonecleaner.core.permissions.rememberPermissionSnapshot
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.ui.components.CategoryRow
 import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
+import com.ikeralvaro.phonecleaner.ui.components.EmptyState
+import com.ikeralvaro.phonecleaner.ui.components.GradientHeader
+import com.ikeralvaro.phonecleaner.ui.components.listPadding
+import androidx.compose.foundation.layout.WindowInsets
+
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 
 @Composable
@@ -75,27 +72,39 @@ fun MediaContent(
 ) {
     Scaffold(
         topBar = {
-            PhoneCleanerTopBar(
+            GradientHeader(
                 stringResource(R.string.files_title),
                 onBack = onBack,
                 actions = {
                     if (state.phase == MediaPhase.READY) {
-                        IconButton(onClick = onRefresh) { Icon(Icons.Rounded.Refresh, contentDescription = null) }
+                        IconButton(onClick = onRefresh) {
+                            Icon(AppIcons.Refresh, contentDescription = stringResource(R.string.action_refresh))
+                        }
                     }
                 },
             )
         },
+        contentWindowInsets = WindowInsets(0),
     ) { padding ->
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
+                .padding(listPadding(padding)),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (!hasAccess) {
+            if (!hasAccess || state.phase == MediaPhase.NO_ACCESS) {
                 PermissionCard(stringResource(R.string.perm_media_title), stringResource(R.string.perm_media_desc), onGrantMedia)
+            }
+            val nothingFound = state.phase == MediaPhase.READY && MediaCategory.entries.all { state.count(it) == 0 }
+            if (nothingFound) {
+                SectionCard {
+                    EmptyState(
+                        AppIcons.TaskAlt,
+                        stringResource(R.string.files_nothing_found),
+                        stringResource(R.string.files_nothing_found_desc),
+                    )
+                }
             }
             if (state.phase == MediaPhase.ANALYZING) {
                 SectionCard {
@@ -111,7 +120,7 @@ fun MediaContent(
                     CategoryRow(
                         title = stringResource(category.title()),
                         subtitle = if (ready) {
-                            countText(category, count) + " · " + stringResource(category.description())
+                            stringResource(R.string.join_dot, countText(category, count), stringResource(category.description()))
                         } else {
                             stringResource(category.description())
                         },
@@ -126,11 +135,10 @@ fun MediaContent(
                     title = stringResource(R.string.files_compress),
                     subtitle = stringResource(R.string.files_compress_desc),
                     trailing = "",
-                    icon = Icons.Rounded.Compress,
+                    icon = AppIcons.Compress,
                     onClick = onOpenCompress,
                 )
             }
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
@@ -158,9 +166,9 @@ fun MediaCategory.description(): Int = when (this) {
 }
 
 fun MediaCategory.icon(): ImageVector = when (this) {
-    MediaCategory.DUPLICATES -> Icons.Rounded.ContentCopy
-    MediaCategory.SIMILAR -> Icons.Rounded.BurstMode
-    MediaCategory.SCREENSHOTS -> Icons.Rounded.Screenshot
-    MediaCategory.LARGE_VIDEOS -> Icons.Rounded.VideoFile
-    MediaCategory.LARGE_FILES -> Icons.Rounded.FolderZip
+    MediaCategory.DUPLICATES -> AppIcons.ContentCopy
+    MediaCategory.SIMILAR -> AppIcons.BurstMode
+    MediaCategory.SCREENSHOTS -> AppIcons.Screenshot
+    MediaCategory.LARGE_VIDEOS -> AppIcons.VideoFile
+    MediaCategory.LARGE_FILES -> AppIcons.FolderZip
 }

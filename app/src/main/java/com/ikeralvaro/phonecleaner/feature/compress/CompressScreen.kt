@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.compress
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import android.app.Activity
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -7,18 +8,15 @@ import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,23 +25,14 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Compress
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.RadioButtonUnchecked
-import androidx.compose.material.icons.rounded.TaskAlt
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SecondaryTabRow
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,7 +60,17 @@ import com.ikeralvaro.phonecleaner.core.util.formatBytes
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
 import com.ikeralvaro.phonecleaner.ui.components.EmptyState
 import com.ikeralvaro.phonecleaner.ui.components.PermissionCard
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
+import com.ikeralvaro.phonecleaner.ui.components.BottomAction
+import com.ikeralvaro.phonecleaner.ui.components.GradientHeader
+import com.ikeralvaro.phonecleaner.ui.components.SecondaryButton
+import com.ikeralvaro.phonecleaner.ui.components.listPadding
+import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.remember
 import com.ikeralvaro.phonecleaner.ui.components.SectionCard
 
 @Composable
@@ -110,7 +109,13 @@ fun CompressScreen(onBack: () -> Unit) {
         onSelectAll = viewModel::selectAllVisible,
         onStart = viewModel::start,
         onTrashOriginals = askTrash,
+        // El anuncio solo sale con el botón explícito "Hecho"; cerrar un error no lo muestra.
         onDismissResult = { finishWithAd(viewModel::dismissResult) },
+        onRetry = {
+            viewModel.dismissResult()
+            viewModel.start()
+        },
+        onCloseFailure = viewModel::dismissResult,
     )
 }
 
@@ -127,77 +132,79 @@ fun CompressContent(
     onTrashOriginals: () -> Unit,
     onDismissResult: () -> Unit,
     sdkInt: Int = Build.VERSION.SDK_INT,
+    onRetry: () -> Unit = onStart,
+    onCloseFailure: () -> Unit = onDismissResult,
 ) {
-    val allVisibleSelected = state.visible.isNotEmpty() && state.visible.all { it.item.id in state.selected }
+    val visible = state.visible
+    val allVisibleSelected = remember(visible, state.selected) { visible.isNotEmpty() && visible.all { it.item.id in state.selected } }
+    val savings = remember(state.photos, state.videos, state.selected) { state.estimatedSavings }
     Scaffold(
         topBar = {
-            PhoneCleanerTopBar(
+            GradientHeader(
                 stringResource(R.string.compress_title),
                 onBack = onBack,
                 actions = {
-                    if (state.visible.isNotEmpty() && state.run.state != RunState.RUNNING) {
-                        TextButton(onClick = { onSelectAll(!allVisibleSelected) }) {
+                    if (visible.isNotEmpty() && state.run.state != RunState.RUNNING) {
+                        TextButton(
+                            onClick = { onSelectAll(!allVisibleSelected) },
+                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                        ) {
                             Text(stringResource(if (allVisibleSelected) R.string.action_deselect_all else R.string.action_select_all))
                         }
                     }
                 },
             )
         },
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (state.run.state != RunState.RUNNING && state.selected.isNotEmpty()) {
-                Surface(color = MaterialTheme.colorScheme.background) {
-                    Box(
-                        Modifier
-                            .navigationBarsPadding()
-                            .padding(16.dp),
-                    ) {
-                        BigActionButton(
-                            text = stringResource(R.string.compress_button, state.selected.size, formatBytes(state.estimatedSavings)),
-                            onClick = onStart,
-                            icon = Icons.Rounded.Compress,
-                        )
-                    }
+                BottomAction {
+                    BigActionButton(
+                        text = stringResource(R.string.compress_button, state.selected.size, formatBytes(savings)),
+                        onClick = onStart,
+                        icon = AppIcons.Compress,
+                    )
                 }
             }
         },
     ) { padding ->
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 108.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(12.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = listPadding(padding, horizontal = 12.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val full: (androidx.compose.foundation.lazy.grid.LazyGridItemSpanScope) -> GridItemSpan = { GridItemSpan(it.maxLineSpan) }
             if (!state.hasAccess) {
-                item(span = full) {
+                item(key = "permission", span = full, contentType = "card") {
                     PermissionCard(stringResource(R.string.perm_media_title), stringResource(R.string.perm_media_desc), onGrantMedia)
                 }
             }
-            item(span = full) { RunCard(state.run, sdkInt, onTrashOriginals, onDismissResult) }
-            if (state.run.state == RunState.FINISHED) {
-                item(span = full) { NativeAdCard(AdPlacement.RESULT) }
+            item(key = "run", span = full, contentType = "card") {
+                RunCard(state.run, sdkInt, onTrashOriginals, onDismissResult, onRetry, onCloseFailure)
             }
-            item(span = full) {
+            if (state.run.state == RunState.FINISHED) {
+                item(key = "ad", span = full, contentType = "ad") { NativeAdCard(AdPlacement.RESULT) }
+            }
+            item(key = "tabs", span = full, contentType = "tabs") {
                 SecondaryTabRow(selectedTabIndex = state.tab.ordinal, containerColor = MaterialTheme.colorScheme.background) {
                     Tab(
                         selected = state.tab == CompressTab.PHOTOS,
                         onClick = { onTab(CompressTab.PHOTOS) },
-                        text = { Text("${stringResource(R.string.compress_photos)} (${state.photos.size})") },
+                        text = { Text(stringResource(R.string.compress_photos_count, state.photos.size)) },
                     )
                     Tab(
                         selected = state.tab == CompressTab.VIDEOS,
                         onClick = { onTab(CompressTab.VIDEOS) },
-                        text = { Text("${stringResource(R.string.compress_videos)} (${state.videos.size})") },
+                        text = { Text(stringResource(R.string.compress_videos_count, state.videos.size)) },
                     )
                 }
             }
-            item(span = full) { ModeSelector(state.mode, onMode) }
-            item(span = full) {
+            item(key = "mode", span = full, contentType = "mode") { ModeSelector(state.mode, onMode) }
+            item(key = "explain", span = full, contentType = "explain") {
                 Row(Modifier.padding(vertical = 4.dp)) {
-                    Icon(Icons.Rounded.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    Icon(AppIcons.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text(
                         stringResource(R.string.compress_explain),
@@ -206,10 +213,22 @@ fun CompressContent(
                     )
                 }
             }
-            if (!state.loading && state.visible.isEmpty() && state.hasAccess) {
-                item(span = full) { EmptyState(Icons.Rounded.TaskAlt, stringResource(R.string.files_empty), stringResource(R.string.compress_empty)) }
+            if (state.loading && visible.isEmpty() && state.hasAccess) {
+                item(key = "loading", span = full, contentType = "loading") {
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) { CircularProgressIndicator() }
+                }
             }
-            items(state.visible, key = { it.item.id }) { candidate ->
+            if (!state.loading && visible.isEmpty() && state.hasAccess) {
+                item(key = "empty", span = full, contentType = "empty") {
+                    EmptyState(AppIcons.TaskAlt, stringResource(R.string.files_empty), stringResource(R.string.compress_empty))
+                }
+            }
+            items(visible, key = { it.item.id }, contentType = { "tile" }) { candidate ->
                 CandidateTile(candidate, candidate.item.id in state.selected) { onToggle(candidate.item.id) }
             }
         }
@@ -232,6 +251,10 @@ private fun ModeSelector(mode: CompressionMode, onMode: (CompressionMode) -> Uni
                 colors = CardDefaults.cardColors(
                     containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
                 ),
+                border = BorderStroke(
+                    if (selected) 1.5.dp else 1.dp,
+                    if (selected) MaterialTheme.colorScheme.primary else cardBorderColor(),
+                ),
             ) {
                 Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = selected, onClick = null)
@@ -247,7 +270,14 @@ private fun ModeSelector(mode: CompressionMode, onMode: (CompressionMode) -> Uni
 }
 
 @Composable
-private fun RunCard(run: CompressRun, sdkInt: Int, onTrashOriginals: () -> Unit, onDismiss: () -> Unit) {
+private fun RunCard(
+    run: CompressRun,
+    sdkInt: Int,
+    onTrashOriginals: () -> Unit,
+    onDismiss: () -> Unit,
+    onRetry: () -> Unit,
+    onCloseFailure: () -> Unit,
+) {
     when (run.state) {
         RunState.IDLE -> Unit
         RunState.RUNNING -> SectionCard {
@@ -267,7 +297,7 @@ private fun RunCard(run: CompressRun, sdkInt: Int, onTrashOriginals: () -> Unit,
         }
         RunState.FINISHED -> SectionCard {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(AppIcons.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
                 Text(
                     if (run.savedBytes > 0) stringResource(R.string.compress_done, formatBytes(run.savedBytes)) else stringResource(R.string.compress_done_none),
@@ -279,18 +309,20 @@ private fun RunCard(run: CompressRun, sdkInt: Int, onTrashOriginals: () -> Unit,
                 Spacer(Modifier.height(8.dp))
                 when {
                     run.originalsTrashed -> Text(stringResource(R.string.compress_originals_trashed), style = MaterialTheme.typography.bodyMedium)
-                    sdkInt >= 30 -> Button(onClick = onTrashOriginals, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.compress_trash_originals))
-                    }
+                    sdkInt >= 30 -> SecondaryButton(stringResource(R.string.compress_trash_originals), onTrashOriginals, icon = AppIcons.Delete)
                     else -> Text(stringResource(R.string.compress_originals_kept), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            Spacer(Modifier.height(4.dp))
-            OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_done)) }
+            Spacer(Modifier.height(8.dp))
+            BigActionButton(stringResource(R.string.action_done), onDismiss)
         }
         RunState.FAILED -> SectionCard {
             Text(stringResource(R.string.compress_failed), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.error)
-            OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SecondaryButton(stringResource(R.string.action_close), onCloseFailure, Modifier.weight(1f))
+                SecondaryButton(stringResource(R.string.action_retry), onRetry, Modifier.weight(1f), icon = AppIcons.Refresh)
+            }
         }
     }
 }
@@ -304,7 +336,7 @@ private fun CandidateTile(candidate: CompressCandidate, selected: Boolean, onTog
             .clip(MaterialTheme.shapes.small)
             .border(3.dp, if (selected) MaterialTheme.colorScheme.primary else Color.Transparent, MaterialTheme.shapes.small)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .clickable(onClick = onToggle),
+            .toggleable(value = selected, role = Role.Checkbox, onValueChange = { onToggle() }),
     ) {
         AsyncImage(
             model = candidate.item.uri,
@@ -313,7 +345,7 @@ private fun CandidateTile(candidate: CompressCandidate, selected: Boolean, onTog
             modifier = Modifier.fillMaxSize(),
         )
         Icon(
-            if (selected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+            if (selected) AppIcons.CheckCircle else AppIcons.RadioButtonUnchecked,
             contentDescription = null,
             tint = if (selected) MaterialTheme.colorScheme.primary else Color.White,
             modifier = Modifier

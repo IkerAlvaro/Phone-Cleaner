@@ -17,13 +17,14 @@ val LogoGreenDeep = Color(0xFF008F39)
 fun brandGradient(): Brush = if (LocalDarkTheme.current) {
     Brush.linearGradient(listOf(Color(0xFF0F5C2F), Color(0xFF063D1E)))
 } else {
-    Brush.linearGradient(listOf(LogoGreenLight, LogoGreen, LogoGreenDeep))
+    // Más oscuro que el logo para que el texto blanco tenga contraste suficiente (WCAG AA).
+    Brush.linearGradient(listOf(Color(0xFF16A34A), Color(0xFF15803D), Color(0xFF166534)))
 }
 
 @Composable
 @ReadOnlyComposable
 fun buttonGradient(): Brush = Brush.horizontalGradient(
-    if (LocalDarkTheme.current) listOf(Color(0xFF22C55E), Color(0xFF16A34A)) else listOf(LogoGreen, Color(0xFF15A04A)),
+    if (LocalDarkTheme.current) listOf(Color(0xFF22C55E), Color(0xFF16A34A)) else listOf(Color(0xFF15803D), Color(0xFF166534)),
 )
 
 /** Borde sutil de las tarjetas "de cristal". */

@@ -76,7 +76,7 @@
     <string name="boost_in_use">%1$s en uso de %2$s</string>
     <string name="boost_button">Liberar RAM</string>
     <string name="boost_result_freed">Liberados %1$s de RAM</string>
-    <string name="boost_result_none">La memoria ya estaba optimizada</string>
+    <string name="boost_result_none">Esta vez no se ha liberado memoria</string>
     <string name="apps_title">Apps</string>
     <string name="apps_sort_size">Tamaño</string>
     <string name="apps_system_badge">Sistema</string>
@@ -122,9 +122,9 @@
     <string name="tip_display">Bajar brillo y tiempo de pantalla</string>
     <string name="tip_display_desc">La pantalla es lo que más gasta</string>
     <string name="tip_dark">Usar el modo oscuro</string>
-    <string name="tip_dark_desc">Ahorra energía en pantallas OLED</string>
+    <string name="tip_dark_desc">Puede gastar menos en pantallas OLED</string>
     <string name="tip_boost">Cerrar apps en segundo plano</string>
-    <string name="tip_boost_desc">Libera RAM y reduce el consumo</string>
+    <string name="tip_boost_desc">Cierra las apps que no estás usando</string>
     <string name="monitor_title">Sistema</string>
     <string name="monitor_cpu">Procesador</string>
     <string name="monitor_cpu_activity">Actividad estimada</string>
@@ -204,7 +204,7 @@
     <string name="settings_privacy">Tus archivos, fotos y datos nunca salen del móvil. La app muestra anuncios de Google AdMob, que pueden usar el identificador de publicidad del móvil; puedes cambiar tu consentimiento en «Privacidad de los anuncios» o quitarlos con un pago único.</string>
     <string name="settings_language">Idioma</string>
     <string name="settings_language_desc">Usa el idioma del móvil. En Android 13 o superior puedes elegirlo en los ajustes de la app.</string>
-    <string name="onboarding_title">Limpia, acelera y cuida tu móvil</string>
+    <string name="onboarding_title">Limpia y organiza tu móvil</string>
     <string name="onboarding_subtitle">Libera espacio, cierra lo que sobra y vigila la batería. Tus archivos nunca salen del móvil.</string>
     <string name="onboarding_permissions_title">Permisos</string>
     <string name="onboarding_permissions_subtitle">Phone Cleaner solo usa estos permisos dentro de tu móvil. Puedes concederlos ahora o más tarde.</string>
@@ -246,13 +246,13 @@
     <string name="ads_privacy">Privacidad de los anuncios</string>
     <string name="ads_privacy_desc">Cambia tu consentimiento para los anuncios personalizados</string>
     <string name="privacy_policy">Política de privacidad</string>
-    <string name="home_greeting">Tu móvil, como nuevo</string>
+    <string name="home_greeting">Limpia y organiza tu móvil</string>
     <string name="tip_of_day">Consejo del día</string>
-    <string name="daily_tip_1">Las apps que se inician solas gastan batería aunque no las abras. Revísalas en Batería.</string>
+    <string name="daily_tip_1">Las apps que se inician solas pueden gastar batería aunque no las abras. Revísalas en Batería.</string>
     <string name="daily_tip_2">Las capturas de pantalla antiguas suelen ocupar mucho. Míralas en Fotos y archivos.</string>
     <string name="daily_tip_3">Comprimir los vídeos grandes puede ahorrar gigas sin que se note la diferencia.</string>
-    <string name="daily_tip_4">Un móvil caliente gasta más batería: cierra apps en segundo plano si se calienta.</string>
-    <string name="daily_tip_5">El modo oscuro ahorra batería en pantallas OLED.</string>
+    <string name="daily_tip_4">Si el móvil se calienta, cerrar las apps en segundo plano puede ayudar.</string>
+    <string name="daily_tip_5">En pantallas OLED, el modo oscuro puede gastar menos batería.</string>
     <plurals name="items_count">
         <item quantity="one">%d elemento</item>
         <item quantity="other">%d elementos</item>
@@ -277,4 +277,59 @@
         <item quantity="one">y %d más</item>
         <item quantity="other">y %d más</item>
     </plurals>
+    <!-- Formatos comunes -->
+    <string name="percent_value">%1$d %%</string>
+    <string name="join_dot">%1$s · %2$s</string>
+    <string name="separator_dot">" · "</string>
+    <string name="label_value">%1$s: %2$s</string>
+    <string name="more_count">+%1$d</string>
+    <string name="ram_label">RAM</string>
+    <string name="loading">Cargando…</string>
+    <!-- Acciones y estados -->
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_yes_cancel">Sí, cancelar</string>
+    <string name="action_continue">Seguir</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_retry">Reintentar</string>
+    <string name="action_refresh">Volver a analizar</string>
+    <string name="action_expand">Mostrar archivos</string>
+    <string name="action_collapse">Ocultar archivos</string>
+    <string name="state_expanded">Desplegado</string>
+    <string name="state_collapsed">Plegado</string>
+    <string name="cancel_title">¿Cancelar?</string>
+    <!-- Confirmaciones -->
+    <string name="cleaner_cancel_scan">Se detendrá el análisis y no se borrará nada.</string>
+    <string name="cleaner_cancel_cleaning">Se detendrá la limpieza. Lo que ya se haya borrado no se puede recuperar.</string>
+    <string name="boost_cancel_message">Se detendrá el proceso y se soltará la memoria ocupada.</string>
+    <string name="cleaner_confirm_title">¿Limpiar los archivos seleccionados?</string>
+    <plurals name="cleaner_confirm_message">
+        <item quantity="one">Se borrará %1$d elemento (%2$s). No se puede deshacer.</item>
+        <item quantity="other">Se borrarán %1$d elementos (%2$s). No se puede deshacer.</item>
+    </plurals>
+    <string name="files_confirm_title">¿Eliminar los archivos seleccionados?</string>
+    <plurals name="files_confirm_trash">
+        <item quantity="one">Se moverá %1$d archivo (%2$s) a la papelera. Android te pedirá confirmación.</item>
+        <item quantity="other">Se moverán %1$d archivos (%2$s) a la papelera. Android te pedirá confirmación.</item>
+    </plurals>
+    <plurals name="files_confirm_permanent">
+        <item quantity="one">Se borrará %1$d archivo (%2$s) de forma permanente. No se puede deshacer.</item>
+        <item quantity="other">Se borrarán %1$d archivos (%2$s) de forma permanente. No se puede deshacer.</item>
+    </plurals>
+    <string name="apps_confirm_uninstall_title">¿Desinstalar las apps seleccionadas?</string>
+    <plurals name="apps_confirm_uninstall_message">
+        <item quantity="one">Vas a desinstalar %1$d app. Android te preguntará %1$d vez para confirmarlo.</item>
+        <item quantity="other">Vas a desinstalar %1$d apps. Android te preguntará %1$d veces, una por cada app.</item>
+    </plurals>
+    <!-- Estados vacíos -->
+    <string name="files_group_header">Grupo %1$d · %2$s</string>
+    <string name="files_nothing_found">Todo en orden</string>
+    <string name="files_nothing_found_desc">No hemos encontrado duplicados, capturas ni archivos grandes.</string>
+    <string name="apps_autostart_empty">Ninguna app se inicia sola</string>
+    <string name="apps_autostart_empty_desc">No hay apps que se abran solas al encender el móvil.</string>
+    <string name="apps_empty_desc">No hemos encontrado apps instaladas.</string>
+    <string name="app_detail_title">App</string>
+    <string name="app_detail_not_found">App no encontrada</string>
+    <string name="app_detail_not_found_desc">Puede que se haya desinstalado.</string>
+    <string name="compress_photos_count">Fotos (%1$d)</string>
+    <string name="compress_videos_count">Vídeos (%1$d)</string>
 </resources>

@@ -34,14 +34,17 @@ private object AppIconCache {
 fun AppIcon(packageName: String, label: String, modifier: Modifier = Modifier, size: Dp = 40.dp) {
     val context = LocalContext.current
     val sizePx = with(LocalDensity.current) { size.roundToPx() }
-    val icon by produceState(AppIconCache.cache.get(packageName), packageName) {
+    // La clave incluye el tamaño: el mismo icono se pide a 36, 44 y 64 dp y no debe reescalarse.
+    val key = "$packageName@$sizePx"
+    val icon by produceState(AppIconCache.cache.get(key), key) {
         if (value == null) {
             value = withContext(Dispatchers.IO) {
                 try {
                     context.packageManager.getApplicationIcon(packageName)
                         .toBitmap(sizePx, sizePx)
                         .asImageBitmap()
-                        .also { AppIconCache.cache.put(packageName, it) }
+                        .also { AppIconCache.cache.put(key, it) }
+
                 } catch (_: PackageManager.NameNotFoundException) {
                     null
                 }

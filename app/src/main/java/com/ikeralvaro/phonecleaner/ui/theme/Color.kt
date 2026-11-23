@@ -17,18 +17,21 @@ val Green400 = Color(0xFF4ADE80)
 val Green900 = Color(0xFF14532D)
 val InkDark = Color(0xFFE8F5EC)
 
+val Green800 = Color(0xFF166534)
+
+// primary Green700 (y no Green600) para que el texto verde y el blanco sobre verde pasen WCAG AA.
 val LightColors = lightColorScheme(
-    primary = Green600,
+    primary = Green700,
     onPrimary = Color.White,
     primaryContainer = Green100,
     onPrimaryContainer = Green950,
     inversePrimary = Green400,
-    secondary = Green700,
+    secondary = Green800,
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFBBF7D0),
     onSecondaryContainer = Green950,
     // "tertiary" se usa como color de aviso (temperatura alta, apps sin restricción).
-    tertiary = Color(0xFFD97706),
+    tertiary = Color(0xFFB45309),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFFEF3C7),
     onTertiaryContainer = Color(0xFF451A03),
@@ -38,7 +41,7 @@ val LightColors = lightColorScheme(
     onSurface = InkLight,
     surfaceVariant = Color(0xFFF1F8F3),
     onSurfaceVariant = Color(0xFF4B5B51),
-    surfaceTint = Green600,
+    surfaceTint = Green700,
     surfaceBright = Color.White,
     surfaceDim = Color(0xFFE3EDE6),
     surfaceContainerLowest = Color.White,

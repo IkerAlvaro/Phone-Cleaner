@@ -37,6 +37,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.BorderStroke
+import com.ikeralvaro.phonecleaner.ui.theme.cardBorderColor
+
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.ads.AdLoader
@@ -114,6 +117,7 @@ fun NativeAdCard(placement: AdPlacement, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainer),
+        border = BorderStroke(1.dp, cardBorderColor()),
     ) {
         AndroidView(
             modifier = Modifier.fillMaxWidth(),
@@ -169,6 +173,7 @@ private fun PreviewAdCard(placement: AdPlacement, modifier: Modifier) {
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainer),
+        border = BorderStroke(1.dp, cardBorderColor()),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -1,12 +1,12 @@
 package com.ikeralvaro.phonecleaner.feature.home
 
+import com.ikeralvaro.phonecleaner.ui.icons.AppIcons
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -26,14 +26,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.BatteryChargingFull
-import androidx.compose.material.icons.rounded.CleaningServices
-import androidx.compose.material.icons.rounded.Compress
-import androidx.compose.material.icons.rounded.Memory
-import androidx.compose.material.icons.rounded.PhotoLibrary
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,12 +50,13 @@ import com.ikeralvaro.phonecleaner.core.util.relativeTime
 import com.ikeralvaro.phonecleaner.ui.components.BigActionButton
 import com.ikeralvaro.phonecleaner.ui.components.FeatureTile
 import com.ikeralvaro.phonecleaner.ui.components.MiniStat
-import com.ikeralvaro.phonecleaner.ui.components.PhoneCleanerTopBar
 import com.ikeralvaro.phonecleaner.ui.components.SectionHeader
 import com.ikeralvaro.phonecleaner.ui.components.UsageRing
 import com.ikeralvaro.phonecleaner.ui.components.currentLocale
 import com.ikeralvaro.phonecleaner.ui.components.formatCelsius
-import kotlin.math.roundToInt
+import com.ikeralvaro.phonecleaner.ui.components.LocalBottomBarPadding
+import com.ikeralvaro.phonecleaner.ui.components.percent
+import com.ikeralvaro.phonecleaner.ui.components.percentOf
 
 enum class HomeTool { CLEANER, BOOST, BATTERY, COMPRESS, APPS, FILES }
 
@@ -103,9 +96,9 @@ fun HomeContent(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val memory = state.memory
                 MiniStat(
-                    icon = Icons.Rounded.Memory,
+                    icon = AppIcons.Memory,
                     label = stringResource(R.string.home_ram),
-                    value = memory?.let { "${(it.usedFraction * 100).roundToInt()} %" } ?: "—",
+                    value = memory?.let { percent(it.usedFraction) } ?: "—",
                     detail = memory?.let { stringResource(R.string.home_storage_used, formatBytes(it.usedBytes), formatBytes(it.totalBytes)) },
                     progress = memory?.usedFraction,
                     modifier = Modifier.weight(1f),
@@ -113,9 +106,9 @@ fun HomeContent(
                 )
                 val battery = state.battery
                 MiniStat(
-                    icon = Icons.Rounded.BatteryChargingFull,
+                    icon = AppIcons.BatteryChargingFull,
                     label = stringResource(R.string.home_battery),
-                    value = battery?.let { "${it.levelPercent} %" } ?: "—",
+                    value = battery?.let { percentOf(it.levelPercent) } ?: "—",
                     detail = battery?.temperatureC?.let { formatCelsius(it, currentLocale()) },
                     progress = battery?.levelPercent?.div(100f),
                     modifier = Modifier.weight(1f),
@@ -126,7 +119,7 @@ fun HomeContent(
             BigActionButton(
                 text = stringResource(R.string.home_quick_scan),
                 onClick = onQuickScan,
-                icon = Icons.Rounded.CleaningServices,
+                icon = AppIcons.CleaningServices,
             )
             Spacer(Modifier.height(20.dp))
             SectionHeader(stringResource(R.string.home_tools))
@@ -143,7 +136,8 @@ fun HomeContent(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.height(24.dp))
+            // Hueco para que el final no quede bajo la barra píldora.
+            Spacer(Modifier.height(24.dp + LocalBottomBarPadding.current))
         }
     }
     }
@@ -174,7 +168,7 @@ private fun HomeHeader(state: HomeUiState, onSettings: () -> Unit) {
                 )
             }
             IconButton(onClick = onSettings) {
-                Icon(Icons.Rounded.Settings, contentDescription = stringResource(R.string.action_settings), tint = Color.White)
+                Icon(AppIcons.Settings, contentDescription = stringResource(R.string.action_settings), tint = Color.White)
             }
         }
         Spacer(Modifier.height(12.dp))
@@ -187,7 +181,7 @@ private fun HomeHeader(state: HomeUiState, onSettings: () -> Unit) {
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = storage?.let { "${(it.usedFraction * 100).roundToInt()} %" } ?: "—",
+                    text = storage?.let { percent(it.usedFraction) } ?: "—",
                     style = MaterialTheme.typography.displayMedium,
                     color = Color.White,
                 )
@@ -211,12 +205,12 @@ private fun HomeHeader(state: HomeUiState, onSettings: () -> Unit) {
 @Composable
 private fun ToolGrid(onTool: (HomeTool) -> Unit) {
     val tools = listOf(
-        Triple(HomeTool.CLEANER, Icons.Rounded.CleaningServices, R.string.tool_cleaner to R.string.tool_cleaner_desc),
-        Triple(HomeTool.BOOST, Icons.Rounded.Memory, R.string.tool_boost to R.string.tool_boost_desc),
-        Triple(HomeTool.BATTERY, Icons.Rounded.BatteryChargingFull, R.string.tool_battery to R.string.tool_battery_desc),
-        Triple(HomeTool.COMPRESS, Icons.Rounded.Compress, R.string.tool_compress to R.string.tool_compress_desc),
-        Triple(HomeTool.APPS, Icons.Rounded.Apps, R.string.tool_apps to R.string.tool_apps_desc),
-        Triple(HomeTool.FILES, Icons.Rounded.PhotoLibrary, R.string.tool_files to R.string.tool_files_desc),
+        Triple(HomeTool.CLEANER, AppIcons.CleaningServices, R.string.tool_cleaner to R.string.tool_cleaner_desc),
+        Triple(HomeTool.BOOST, AppIcons.Memory, R.string.tool_boost to R.string.tool_boost_desc),
+        Triple(HomeTool.BATTERY, AppIcons.BatteryChargingFull, R.string.tool_battery to R.string.tool_battery_desc),
+        Triple(HomeTool.COMPRESS, AppIcons.Compress, R.string.tool_compress to R.string.tool_compress_desc),
+        Triple(HomeTool.APPS, AppIcons.Apps, R.string.tool_apps to R.string.tool_apps_desc),
+        Triple(HomeTool.FILES, AppIcons.PhotoLibrary, R.string.tool_files to R.string.tool_files_desc),
     )
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         tools.chunked(3).forEach { row ->
@@ -246,7 +240,7 @@ private fun TipCard(now: Long) {
     val tip = DAILY_TIPS[((now / DAY_MS) % DAILY_TIPS.size).toInt()]
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBadge(Icons.Rounded.Lightbulb)
+            IconBadge(AppIcons.Lightbulb)
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(stringResource(R.string.tip_of_day), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -260,6 +254,9 @@ private fun TipCard(now: Long) {
 private fun lastCleanText(state: HomeUiState, now: Long): String {
     if (state.lastCleanAt <= 0L) return stringResource(R.string.home_never_cleaned)
     val relative = relativeTime(state.lastCleanAt, now)
-    return stringResource(R.string.home_last_clean, relative) + " · " +
-        stringResource(R.string.home_total_freed, formatBytes(state.totalFreedBytes))
+    return stringResource(
+        R.string.join_dot,
+        stringResource(R.string.home_last_clean, relative),
+        stringResource(R.string.home_total_freed, formatBytes(state.totalFreedBytes)),
+    )
 }

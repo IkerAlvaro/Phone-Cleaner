@@ -58,6 +58,9 @@ import kotlinx.coroutines.Dispatchers
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import com.github.takahirom.roborazzi.ExperimentalRoborazziApi
+import com.github.takahirom.roborazzi.captureScreenRoboImage
+
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -100,6 +103,18 @@ class ScreenshotTest(private val dark: Boolean) {
         compose.onRoot().captureRoboImage("../docs/screenshots/${name}_${if (dark) "oscuro" else "claro"}.png")
     }
 
+    /** Captura toda la pantalla, incluidas las ventanas de diálogo. */
+    @OptIn(ExperimentalRoborazziApi::class)
+    private fun captureScreen(name: String, content: @Composable () -> Unit) {
+        compose.setContent {
+            CompositionLocalProvider(LocalAdPreview provides true) {
+                PhoneCleanerTheme(darkTheme = dark) { content() }
+            }
+        }
+        compose.waitForIdle()
+        captureScreenRoboImage("../docs/screenshots/${name}_${if (dark) "oscuro" else "claro"}.png")
+    }
+
     @Test fun home() = capture("01_inicio") {
         HomeContent(
             HomeUiState(FakeData.storage, FakeData.memory, FakeData.battery, lastCleanAt = NOW - 2 * DAY_MS, totalFreedBytes = 3_400 * MB),
@@ -120,6 +135,39 @@ class ScreenshotTest(private val dark: Boolean) {
             hasFilesAccess = true, onBack = {}, onScan = {}, onGrantFiles = {},
             onToggleCategory = {}, onToggleItem = {}, onToggleExpanded = {}, onClean = {}, onClearAllCaches = {}, onOpenStorageSettings = {},
             sdkInt = 35,
+        )
+    }
+
+    @Test fun cleanerExpanded() = capture("02b_limpieza_desplegada") {
+        val groups = FakeData.junkGroups
+        CleanerContent(
+            state = CleanerUiState(
+                phase = CleanerPhase.RESULTS,
+                groups = groups,
+                selectedPaths = groups.filter { it.category.preselected }.flatMap { g -> g.items.map { it.path } }.toSet(),
+                expanded = setOf(groups.first().category),
+                appCache = FakeData.appCache,
+                hasFilesAccess = true,
+            ),
+            hasFilesAccess = true, onBack = {}, onScan = {}, onGrantFiles = {},
+            onToggleCategory = {}, onToggleItem = {}, onToggleExpanded = {}, onClean = {}, onClearAllCaches = {}, onOpenStorageSettings = {},
+            sdkInt = 35,
+        )
+    }
+
+    @Test fun cleanerConfirm() = captureScreen("02c_limpieza_confirmar") {
+        val groups = FakeData.junkGroups
+        CleanerContent(
+            state = CleanerUiState(
+                phase = CleanerPhase.RESULTS,
+                groups = groups,
+                selectedPaths = groups.filter { it.category.preselected }.flatMap { g -> g.items.map { it.path } }.toSet(),
+                appCache = FakeData.appCache,
+                hasFilesAccess = true,
+            ),
+            hasFilesAccess = true, onBack = {}, onScan = {}, onGrantFiles = {},
+            onToggleCategory = {}, onToggleItem = {}, onToggleExpanded = {}, onClean = {}, onClearAllCaches = {}, onOpenStorageSettings = {},
+            sdkInt = 35, initialConfirm = true,
         )
     }
 
@@ -150,6 +198,21 @@ class ScreenshotTest(private val dark: Boolean) {
     @Test fun apps() = capture("05_apps") {
         AppsContent(
             AppsUiState(loading = false, apps = FakeData.apps, sort = AppSort.SIZE, selected = setOf("com.example.game"), now = NOW),
+            onBack = null, onSort = {}, onToggle = {}, onOpenApp = {}, onStopSelected = {}, onUninstallSelected = {},
+        )
+    }
+
+    @Test fun appsConfirm() = captureScreen("05b_apps_confirmar") {
+        AppsContent(
+            AppsUiState(loading = false, apps = FakeData.apps, sort = AppSort.SIZE, selected = setOf("com.example.game", FakeData.apps[1].packageName), now = NOW),
+            onBack = null, onSort = {}, onToggle = {}, onOpenApp = {}, onStopSelected = {}, onUninstallSelected = {},
+            initialConfirm = true,
+        )
+    }
+
+    @Test fun appsAutostartEmpty() = capture("05c_apps_inicio_vacio") {
+        AppsContent(
+            AppsUiState(loading = false, apps = FakeData.apps.filter { !it.startsAtBoot }, sort = AppSort.AUTOSTART, now = NOW),
             onBack = null, onSort = {}, onToggle = {}, onOpenApp = {}, onStopSelected = {}, onUninstallSelected = {},
         )
     }
@@ -204,6 +267,14 @@ class ScreenshotTest(private val dark: Boolean) {
     @Test fun similarReview() = capture("10_fotos_similares") {
         val state = mediaState()
         MediaReviewContent(state, MediaCategory.SIMILAR, state.defaultSelection(MediaCategory.SIMILAR), onBack = {}, onToggle = {}, onSelectAll = {}, onDelete = {})
+    }
+
+    @Test fun similarReviewConfirm() = captureScreen("10b_fotos_confirmar") {
+        val state = mediaState()
+        MediaReviewContent(
+            state, MediaCategory.SIMILAR, state.defaultSelection(MediaCategory.SIMILAR),
+            onBack = {}, onToggle = {}, onSelectAll = {}, onDelete = {}, sdkInt = 35, initialConfirm = true,
+        )
     }
 
     @Test fun compress() = capture("11_comprimir") {
