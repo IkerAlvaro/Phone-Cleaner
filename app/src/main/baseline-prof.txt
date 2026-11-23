@@ -1,19 +1,33 @@
 # Perfil de arranque escrito a mano (rutas calientes al abrir la app e ir a Inicio).
 # Regenerarlo con un módulo Macrobenchmark en un dispositivo real mejora aún más el arranque.
+# App: solo las rutas calientes del arranque y de la pantalla de Inicio.
 HSPLcom/ikeralvaro/phonecleaner/PhoneCleanerApp;->**(**)**
-HSPLcom/ikeralvaro/phonecleaner/MainActivity;->**(**)**
-HSPLcom/ikeralvaro/phonecleaner/AppContainer;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/MainActivity**;->**(**)**
+HSPLcom/ikeralvaro/phonecleaner/AppContainer**;->**(**)**
 HSPLcom/ikeralvaro/phonecleaner/feature/settings/SettingsRepository**;->**(**)**
 HSPLcom/ikeralvaro/phonecleaner/feature/home/**;->**(**)**
 HSPLcom/ikeralvaro/phonecleaner/ui/**;->**(**)**
 HSPLcom/ikeralvaro/phonecleaner/core/system/**;->**(**)**
-Lcom/ikeralvaro/phonecleaner/**;
+Lcom/ikeralvaro/phonecleaner/PhoneCleanerApp;
+Lcom/ikeralvaro/phonecleaner/MainActivity**;
+Lcom/ikeralvaro/phonecleaner/AppContainer**;
+Lcom/ikeralvaro/phonecleaner/feature/home/**;
+Lcom/ikeralvaro/phonecleaner/ui/**;
+Lcom/ikeralvaro/phonecleaner/core/system/**;
+# Compose: núcleo usado en el primer frame.
 HSPLandroidx/compose/runtime/**;->**(**)**
 HSPLandroidx/compose/ui/**;->**(**)**
 HSPLandroidx/compose/foundation/**;->**(**)**
 HSPLandroidx/compose/material3/**;->**(**)**
-HSPLandroidx/compose/animation/**;->**(**)**
-HSPLandroidx/navigation/**;->**(**)**
-HSPLandroidx/lifecycle/**;->**(**)**
-HSPLandroidx/datastore/**;->**(**)**
+HSPLandroidx/compose/animation/core/**;->**(**)**
+# Navegación, ciclo de vida, DataStore y corrutinas usados al arrancar.
+HSPLandroidx/navigation/compose/**;->**(**)**
+HSPLandroidx/navigation/NavController**;->**(**)**
+HSPLandroidx/lifecycle/viewmodel/**;->**(**)**
+HSPLandroidx/lifecycle/LifecycleRegistry**;->**(**)**
+HSPLandroidx/activity/ComponentActivity**;->**(**)**
+HSPLandroidx/activity/compose/**;->**(**)**
+HSPLandroidx/core/splashscreen/**;->**(**)**
+HSPLandroidx/datastore/preferences/**;->**(**)**
+HSPLandroidx/datastore/core/**;->**(**)**
 HSPLkotlinx/coroutines/**;->**(**)**

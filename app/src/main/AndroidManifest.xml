@@ -16,6 +16,8 @@
     <!-- Fotos duplicadas/similares y compresión cuando no hay acceso a todos los archivos. -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <!-- Acceso parcial a fotos/vídeos elegidos por el usuario (Android 14+). -->
+    <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
     <!-- Conservar la ubicación GPS de las fotos al comprimirlas (Android 10+). -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
     <!-- Refuerzo de "Liberar RAM" en Android 13 o inferior. -->
@@ -24,6 +26,11 @@
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Compresión de vídeo larga en primer plano. -->
+    <!-- WorkManager reprograma el trabajo periódico tras reiniciar. play-services-ads lo elimina
+         con tools:node="remove"; "replace" lo restaura en el manifiesto combinado. -->
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED"
+        tools:node="replace" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROCESSING" />
@@ -50,7 +57,6 @@
         android:fullBackupContent="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:largeHeap="true"
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
@@ -72,6 +78,10 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${admobAppId}" />
+        <!-- No iniciar la medición de AdMob hasta obtener el consentimiento (UMP). -->
+        <meta-data
+            android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
+            android:value="true" />
         <meta-data
             android:name="com.google.android.gms.ads.flag.OPTIMIZE_INITIALIZATION"
             android:value="true" />

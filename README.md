@@ -23,7 +23,7 @@ Todas las capturas, en claro y oscuro, están en [`docs/screenshots/`](docs/scre
 | **Gestor de apps** | Ordena por tamaño, nombre, instaladas hace poco o «se inician solas». Cada app tiene una ficha con su tamaño, fechas de instalación y actualización, si arranca sola al encender el móvil y su estado de batería. Se pueden detener o desinstalar varias a la vez. |
 | **Batería** | Muestra nivel, salud, temperatura, voltaje, corriente, capacidad estimada y ciclos. También las **apps que se inician solas al encender el móvil**, las apps sin restricción de batería y accesos directos para ahorrar. |
 | **Sistema (monitor)** | Muestra la CPU (frecuencia por núcleo y actividad estimada), la temperatura y el estado térmico, la RAM, el almacenamiento y la batería en tiempo real. Si el móvil se calienta, da consejos. |
-| **Fotos y archivos** | Encuentra fotos **duplicadas** (copias exactas, comparadas por MD5), fotos **similares** (ráfagas, con hash perceptual), capturas de pantalla, vídeos grandes y archivos grandes. Lo que borras va a la papelera del sistema y se puede recuperar durante 30 días. |
+| **Fotos y archivos** | Encuentra fotos **duplicadas** (copias exactas, comparadas por MD5), fotos **similares** (ráfagas, con hash perceptual), capturas de pantalla, vídeos grandes y archivos grandes. En Android 11 o superior, lo que borras va a la papelera del sistema y se puede recuperar durante 30 días; en Android 7–10 el borrado es definitivo y la app pide confirmación antes. |
 | **Comprimir** | Recomprime **fotos** (JPEG al 85 %, misma resolución, conservando fecha, GPS y orientación) y **vídeos** (HEVC con Media3, con el bitrate que mantiene la calidad). Solo guarda el resultado si ahorra de verdad. Después ofrece mover los originales a la papelera. |
 | **Ajustes** | Tema (según el sistema, claro u oscuro), recordatorio semanal de limpieza y estado de los permisos. |
 
@@ -85,7 +85,7 @@ Datos técnicos:
 
 - Kotlin y Jetpack Compose con Material 3.
 - minSdk 24 (Android 7.0), targetSdk 36 y compileSdk 37. No se puede bajar de 24 porque Navigation Compose lo exige. En Android 7, «Liberar RAM» usa `killBackgroundProcesses`, que en esa versión sí cierra otras apps.
-- R8 activado en la versión release, que pesa unos 2 MB.
+- R8 activado en la versión release, que pesa unos 4,4 MB (APK).
 
 ## Publicar en Google Play
 
@@ -116,6 +116,21 @@ Datos técnicos:
    - **Política de privacidad:** publica [`PRIVACY.md`](PRIVACY.md) (por ejemplo con GitHub Pages) y pon su enlace en Play Console y en `admob.properties` → `privacyPolicyUrl`.
    - **Liberar RAM:** Google podría considerar que llenar la memoria para que Android cierre otras apps es «interferir con otras apps», según su política de abuso del dispositivo. Si lo rechaza, se puede dejar solo el refuerzo de Android 13 o inferior.
 5. **Revisa el `applicationId`** (`com.ikeralvaro.phonecleaner`) antes de la primera subida, porque después no se puede cambiar.
+
+### Formularios de Play Console
+
+- [ ] **Permisos de fotos y vídeos** (`READ_MEDIA_IMAGES`/`READ_MEDIA_VIDEO`): justificar que duplicados y compresión son función principal; Android 14+ admite acceso parcial (`READ_MEDIA_VISUAL_USER_SELECTED`).
+- [ ] **Acceso a todos los archivos** (`MANAGE_EXTERNAL_STORAGE`): declaración como app de limpieza/gestión de almacenamiento, con un **vídeo de demostración** (onboarding → conceder permiso → análisis y limpieza).
+- [ ] **Servicios en primer plano:** declarar los tipos `dataSync` y `mediaProcessing` (compresión de vídeo) con un vídeo que muestre la notificación de progreso.
+- [ ] **Seguridad de los datos:** SDK de AdMob (ID de publicidad, interacciones, diagnósticos, ubicación aproximada), consentimiento UMP y compras de Google Play Billing; datos cifrados en tránsito.
+- [ ] **Público objetivo:** mayores de 13 años.
+- [ ] **Clasificación de contenido:** cuestionario IARC.
+- [ ] **Anuncios:** «Contiene anuncios: sí».
+- [ ] **Política de privacidad:** URL pública de `PRIVACY.md`, con los datos del responsable rellenados.
+- [ ] **Liberar RAM:** riesgo de política de abuso del dispositivo (ver arriba).
+
+6. **Modo estricto de release:** `./gradlew :app:bundleRelease -Pstrict.release=true` (o con `CI=true`) falla si falta `admob.properties`; sin él solo avisa. La versión se fija con `appVersionCode`/`appVersionName` en `gradle.properties` o con `-P`.
+
 
 ## Monetización
 
@@ -166,7 +181,7 @@ Por ejemplo, con 1000 usuarios diarios que vean unos 3 nativos y 1 pantalla comp
   2. Pulsa el botón. El anillo debe subir y bajar, y Phone Cleaner no debe cerrarse.
   3. La cifra liberada debe ser mayor que 0.
   4. Al volver a «Apps recientes», las otras apps tienen que recargarse.
-- [ ] Borrar una foto duplicada la manda a la papelera.
+- [ ] Borrar una foto duplicada la manda a la papelera (Android 11+); en Android 7–10 pide confirmación y la borra definitivamente.
 - [ ] Al comprimir una foto, la copia conserva la fecha y la ubicación.
 - [ ] Al comprimir un vídeo, se ve igual y ocupa menos.
 - [ ] Cambiar entre tema claro y oscuro funciona, y el modo «según el sistema» sigue al móvil.

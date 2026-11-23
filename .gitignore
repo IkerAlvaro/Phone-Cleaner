@@ -11,3 +11,5 @@ build/
 *.jks
 keystore.properties
 admob.properties
+__pycache__/
+*.pyc

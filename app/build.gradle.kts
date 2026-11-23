@@ -11,9 +11,13 @@ val admobProps = Properties().apply {
     if (file.exists()) file.inputStream().use(::load)
 }
 fun admob(key: String, fallback: String): String = admobProps.getProperty(key)?.takeIf { it.isNotBlank() } ?: fallback
+// Modo estricto (-Pstrict.release=true o CI=true): un release sin admob.properties falla en vez de avisar.
+val strictRelease = providers.gradleProperty("strict.release").orNull == "true" ||
+    providers.environmentVariable("CI").orNull == "true"
 if (admobProps.isEmpty) {
     logger.warn("Phone Cleaner: no hay admob.properties; la versión release usará los anuncios de PRUEBA de Google.")
 }
+val missingAdmob = admobProps.isEmpty
 
 plugins {
     alias(libs.plugins.android.application)
@@ -29,8 +33,9 @@ android {
         applicationId = "com.ikeralvaro.phonecleaner"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        // Versión desde gradle.properties (o -PappVersionCode=… -PappVersionName=…).
+        versionCode = providers.gradleProperty("appVersionCode").orNull?.toInt() ?: 1
+        versionName = providers.gradleProperty("appVersionName").orNull ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PRIVACY_POLICY_URL", "\"${admob("privacyPolicyUrl", "https://github.com/IkerAlvaro/Phone-Cleaner/blob/main/PRIVACY.md")}\"")
         buildConfigField("String", "REMOVE_ADS_PRODUCT_ID", "\"remove_ads\"")
@@ -80,6 +85,23 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    packaging {
+        resources {
+            // Metadatos innecesarios en el APK. Se conserva META-INF/services/** (service loaders de coroutines/Media3).
+            excludes += listOf(
+                "DebugProbesKt.bin",
+                "kotlin-tooling-metadata.json",
+                "kotlin/**",
+                "META-INF/*.version",
+                "META-INF/*.kotlin_module",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1",
+            )
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -90,7 +112,7 @@ android {
         disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
         // targetSdk 36 es el exigido por Google Play en 2026; se compila contra 37.
         disable += "OldTargetApi"
-        // aapt2 necesita la carpeta mipmap-anydpi-v26 para los iconos adaptativos aunque minSdk sea 26.
+        // aapt2 necesita la carpeta mipmap-anydpi-v26 para los iconos adaptativos aunque con minSdk 24 lint la considere obsoleta en algunos casos.
         disable += "ObsoleteSdkInt"
     }
 
@@ -107,7 +129,6 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.lifecycle.process)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -120,7 +141,6 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.media3.transformer)
-    implementation(libs.androidx.media3.effect)
     implementation(libs.androidx.media3.common)
     implementation(libs.coil.compose)
     implementation(libs.coil.video)
@@ -135,7 +155,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.ext.junit)
     testImplementation(libs.robolectric)
@@ -143,6 +162,24 @@ dependencies {
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
-    testImplementation(libs.roborazzi.junit.rule)
     testImplementation(libs.coil.test)
+}
+
+// Fallo explícito del release sin IDs reales de AdMob solo en modo estricto.
+tasks.matching { it.name in setOf("assembleRelease", "bundleRelease") }.configureEach {
+    val fail = strictRelease && missingAdmob
+    doFirst {
+        if (fail) throw GradleException(
+            "Phone Cleaner: falta admob.properties (modo estricto: -Pstrict.release=true o CI=true). " +
+                "Crea admob.properties con appId, nativeUnitId e interstitialUnitId. Ver README > Monetización."
+        )
+    }
+}
+
+// Informes del compilador de Compose (estabilidad/recomposición): -Pcompose.reports=true
+if (providers.gradleProperty("compose.reports").orNull == "true") {
+    composeCompiler {
+        reportsDestination = layout.buildDirectory.dir("compose_reports")
+        metricsDestination = layout.buildDirectory.dir("compose_metrics")
+    }
 }

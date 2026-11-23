@@ -234,3 +234,10 @@ Detalles técnicos:
 - **Consentimiento:** con UMP, obligatorio en el EEE. La opción «Privacidad de los anuncios» está en Ajustes.
 - **IDs de AdMob:** la versión de depuración usa siempre los de prueba; la release los lee de `admob.properties`.
 - **Privacidad:** la app deja de ser «100 % sin conexión». Los archivos siguen sin salir del móvil, pero el SDK de AdMob usa Internet y el ID de publicidad. Se actualizaron los textos y el README, y se añadió `PRIVACY.md`.
+
+## Cambio: optimización general (2026-11-23)
+
+Tres tareas en paralelo optimizaron la app:
+- **Lógica:** rendimiento y robustez de los análisis, la limpieza y la compresión, y acceso parcial a fotos en Android 14+.
+- **Interfaz:** menos recomposiciones y recursos más ligeros.
+- **Compilación y cumplimiento:** caché de configuración de Gradle, dependencias sin uso eliminadas, exclusión de metadatos del APK, perfil de arranque más preciso, manifiesto revisado (`RECEIVE_BOOT_COMPLETED`, `DELAY_APP_MEASUREMENT_INIT`, sin `largeHeap`) y política de privacidad y README actualizados para Play Console.
