@@ -86,10 +86,10 @@ fun MediaReviewScreen(viewModel: MediaViewModel, category: MediaCategory, onBack
     val confirmLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
         val request = pending ?: return@rememberLauncherForActivityResult
         pending = null
-        if (result.resultCode == Activity.RESULT_OK) {
-            // A la papelera: se quita de la lista, pero el espacio no se libera hasta que se vacía.
-            viewModel.onDeleted(request.pendingIds, permanentlyFreedBytes = 0L)
-            selected = selected - request.pendingIds
+        // Segundo paso: con la confirmación del sistema se quitan los elementos y se borran los no multimedia.
+        scope.launch {
+            val removed = viewModel.finishDelete(request, confirmed = result.resultCode == Activity.RESULT_OK)
+            selected = selected - removed
         }
     }
 

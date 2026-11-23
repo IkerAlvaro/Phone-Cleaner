@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.feature.cleaner
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Build
 import android.os.storage.StorageManager
@@ -95,7 +96,7 @@ fun CleanerScreen(autoStart: Boolean, onBack: () -> Unit) {
         if (autoStart && state.phase == CleanerPhase.IDLE) viewModel.startScan()
     }
     val clearCacheLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        viewModel.onAppCacheCleared()
+        viewModel.onAppCacheCleared(resultOk = it.resultCode == Activity.RESULT_OK)
     }
     // El anuncio de pantalla completa solo sale con el botón explícito "Volver al inicio", nunca con "atrás".
     val finishWithAd = rememberFinishWithAd()

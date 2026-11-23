@@ -26,6 +26,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.ikeralvaro.phonecleaner.core.permissions.findActivity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -59,7 +61,8 @@ fun BoostScreen(onBack: () -> Unit) {
         onPauseOrDispose { }
     }
     // Si la app pasa a segundo plano a mitad, se cancela y se suelta la memoria.
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.cancel() }
+    val context = LocalContext.current
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.cancelIfNotChangingConfigurations(context.findActivity()) }
     // El anuncio de pantalla completa solo sale con el botón explícito "Hecho", nunca con "atrás".
     val finishWithAd = rememberFinishWithAd()
     val running = state.phase == BoostPhase.RUNNING

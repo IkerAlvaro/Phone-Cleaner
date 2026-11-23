@@ -23,7 +23,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,36 +74,9 @@ fun NativeAdCard(placement: AdPlacement, modifier: Modifier = Modifier) {
     val enabled by ads.adsEnabled.collectAsStateWithLifecycle()
     if (!enabled) return
 
-    val context = LocalContext.current
-    var nativeAd by remember { mutableStateOf<NativeAd?>(null) }
-    DisposableEffect(placement) {
-        var disposed = false
-        var loaded: NativeAd? = null
-        val loader = AdLoader.Builder(context, ads.nativeUnitId)
-            .forNativeAd { ad ->
-                if (disposed) {
-                    ad.destroy()
-                } else {
-                    loaded?.destroy()
-                    loaded = ad
-                    nativeAd = ad
-                }
-            }
-            .withNativeAdOptions(
-                NativeAdOptions.Builder()
-                    .setAdChoicesPlacement(NativeAdOptions.ADCHOICES_TOP_RIGHT)
-                    .setMediaAspectRatio(NativeAdOptions.NATIVE_MEDIA_ASPECT_RATIO_LANDSCAPE)
-                    .build(),
-            )
-            .build()
-        loader.loadAd(AdRequest.Builder().build())
-        onDispose {
-            disposed = true
-            loaded?.destroy()
-            nativeAd = null
-        }
-    }
-
+    // El AdsManager guarda un anuncio por ubicación (caduca a los 55 min): no se pide uno nuevo en cada visita.
+    LaunchedEffect(placement) { ads.requestNative(placement) }
+    val nativeAd by ads.nativeAd(placement).collectAsStateWithLifecycle()
     val ad = nativeAd ?: return
     val scheme = MaterialTheme.colorScheme
     val colors = AdColors(
