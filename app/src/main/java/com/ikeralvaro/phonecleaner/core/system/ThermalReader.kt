@@ -47,16 +47,28 @@ class ThermalReader(
         return ThermalSnapshot(level, readCpuTemp())
     }
 
-    /** Temperatura máxima de las zonas de CPU legibles; muchos móviles las bloquean y devuelve null. */
-    private fun readCpuTemp(): Float? = try {
-        thermalRoot.listFiles { f -> f.name.startsWith("thermal_zone") }
-            ?.mapNotNull { zone ->
-                val type = File(zone, "type").takeIf { it.canRead() }?.readText() ?: return@mapNotNull null
-                if (!ThermalMath.isCpuZone(type)) return@mapNotNull null
-                ThermalMath.parseZoneTemp(File(zone, "temp").takeIf { it.canRead() }?.readText())
-            }
-            ?.maxOrNull()
-    } catch (_: Exception) {
-        null
+    /** Archivos "temp" de las zonas de CPU legibles. El tipo de cada zona no cambia: se busca una sola vez. */
+    private val cpuZoneTempFiles: List<File> by lazy {
+        try {
+            thermalRoot.listFiles { f -> f.name.startsWith("thermal_zone") }.orEmpty()
+                .sortedBy { it.name }
+                .filter { zone ->
+                    val type = File(zone, "type").takeIf { it.canRead() }?.readText() ?: return@filter false
+                    ThermalMath.isCpuZone(type)
+                }
+                .map { File(it, "temp") }
+                .filter { it.canRead() }
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
+
+    /** Temperatura máxima de las zonas de CPU legibles; muchos móviles las bloquean y devuelve null. */
+    private fun readCpuTemp(): Float? = cpuZoneTempFiles.mapNotNull { file ->
+        try {
+            ThermalMath.parseZoneTemp(file.readText())
+        } catch (_: Exception) {
+            null
+        }
+    }.maxOrNull()
 }

@@ -13,6 +13,7 @@ import com.ikeralvaro.phonecleaner.PhoneCleanerApp
 import com.ikeralvaro.phonecleaner.R
 import com.ikeralvaro.phonecleaner.core.notifications.Notifications
 import com.ikeralvaro.phonecleaner.core.util.formatBytes
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.TimeUnit
 
 /** Una vez por semana mide la basura que se puede limpiar y, si merece la pena, avisa con una notificación. */
@@ -25,9 +26,10 @@ class CleanReminderWorker(context: Context, params: WorkerParameters) : Coroutin
 
         var junk = 0L
         if (permissions.allFiles) {
-            junk += container.junkScanner.scan { }
-                .filterKeys { it.preselected }
-                .values.sumOf { items -> items.sumOf { it.sizeBytes } }
+            // Presupuesto de tiempo: en almacenamientos enormes no se alarga indefinidamente.
+            junk += withTimeoutOrNull(SCAN_BUDGET_MS) { container.junkScanner.scan { } }
+                ?.filterKeys { it.preselected }
+                ?.values?.sumOf { items -> items.sumOf { it.sizeBytes } } ?: 0L
         }
         if (junk >= MIN_BYTES_TO_NOTIFY) notify(junk)
         return Result.success()
@@ -50,6 +52,7 @@ class CleanReminderWorker(context: Context, params: WorkerParameters) : Coroutin
     companion object {
         private const val UNIQUE_NAME = "clean_reminder"
         private const val MIN_BYTES_TO_NOTIFY = 200_000_000L
+        private const val SCAN_BUDGET_MS = 3 * 60_000L
 
         fun schedule(context: Context, enabled: Boolean) {
             val wm = WorkManager.getInstance(context)
@@ -58,10 +61,16 @@ class CleanReminderWorker(context: Context, params: WorkerParameters) : Coroutin
                 return
             }
             val request = PeriodicWorkRequestBuilder<CleanReminderWorker>(7, TimeUnit.DAYS)
-                .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+                .setConstraints(
+                    // Solo cargando y con batería suficiente: el escaneo recorre todo el almacenamiento.
+                    Constraints.Builder()
+                        .setRequiresCharging(true)
+                        .setRequiresBatteryNotLow(true)
+                        .build(),
+                )
                 .setInitialDelay(3, TimeUnit.DAYS)
                 .build()
-            wm.enqueueUniquePeriodicWork(UNIQUE_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            wm.enqueueUniquePeriodicWork(UNIQUE_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
     }
 }

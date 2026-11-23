@@ -21,10 +21,34 @@ class JunkRulesTest {
         assertFalse(JunkRules.isThumbnailDir("DCIM/thumbnails"))
     }
 
-    @Test fun tempAndLogFiles() {
-        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("WhatsApp/foo.tmp", recent, now))
-        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("app/logs/debug.LOG", recent, now))
+    @Test fun tempAndLogFilesOnlyWhenOldOrInsideCacheFolders() {
+        val week = now - 8 * DAY_MS
+        // Recientes fuera de una carpeta de caché: pueden estar en uso.
+        assertNull(JunkRules.classifyFile("WhatsApp/foo.tmp", recent, now))
+        assertNull(JunkRules.classifyFile("app/logs/debug.LOG", recent, now))
+        // Antiguos: sí.
+        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("WhatsApp/foo.tmp", week, now))
+        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("app/logs/debug.LOG", week, now))
+        // Dentro de una carpeta tipo caché: aunque sean recientes.
+        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("app/cache/a.tmp", recent, now))
+        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("app/.cache/a.log", recent, now))
+        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("Foo/TMP/x.temp", recent, now))
+        // Fecha desconocida: no.
+        assertNull(JunkRules.classifyFile("WhatsApp/foo.tmp", 0L, now))
         assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("Music/Thumbs.db", recent, now))
+    }
+
+    @Test fun documentsAndDownloadsAreNeverTempUnlessOld() {
+        assertNull(JunkRules.classifyFile("Documents/informe.log", recent, now))
+        assertNull(JunkRules.classifyFile("Download/cache/a.tmp", recent, now))
+        assertNull(JunkRules.classifyFile("Documents/tmp/notas.tmp", recent, now))
+        assertEquals(JunkCategory.TEMP_FILES, JunkRules.classifyFile("Documents/informe.log", old, now))
+    }
+
+    @Test fun residualFoldersNeedThirtyDaysWithoutChanges() {
+        assertFalse(JunkRules.isPossibleLeftover(now - 29 * DAY_MS, now))
+        assertTrue(JunkRules.isPossibleLeftover(now - 31 * DAY_MS, now))
+        assertFalse(JunkRules.isPossibleLeftover(0L, now))
     }
 
     @Test fun downloadsInProgressAreNeverJunk() {

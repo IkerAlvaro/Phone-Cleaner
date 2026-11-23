@@ -47,6 +47,8 @@ class MemoryPressureBooster(
         val warning = AtomicBoolean(false)
         val callbacks = object : ComponentCallbacks2 {
             // RUNNING_LOW/CRITICAL: el sistema va justo. UI_HIDDEN o más: el usuario ha salido de la app.
+            // En Android 14+ el sistema ya no envía los niveles RUNNING_*: ahí el freno real es lowMemory y el
+            // margen sobre el umbral de PressurePolicy, que se comprueban en cada bloque con memory.read().
             override fun onTrimMemory(level: Int) {
                 @Suppress("DEPRECATION")
                 if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) warning.set(true)

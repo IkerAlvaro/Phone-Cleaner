@@ -73,17 +73,46 @@ class DuplicateFinderTest {
     }
 
     // --- Similares ---
-    @Test fun similarPhotosAreGroupedTransitively() {
+    @Test fun similarPhotosAreNotChainedTransitively() {
         val items = listOf(item(1, taken = 0), item(2, taken = 1000), item(3, taken = 2000), item(4, taken = 3000))
         val hashes = mapOf(
             1L to 0b0000L,
             2L to 0b0111L, // a 3 de la 1
-            3L to 0b1111111L, // a 4 de la 2 y 7 de la 1: entra por transitividad
+            3L to 0b1111111L, // a 4 de la 2 pero a 7 de la 1 (el ancla): no entra
             4L to -1L, // muy distinta
         )
         val groups = DuplicateFinder.similarGroups(items, hashes, maxDistance = 4)
         assertEquals(1, groups.size)
-        assertEquals(setOf(1L, 2L, 3L), groups[0].items.map { it.id }.toSet())
+        assertEquals(setOf(1L, 2L), groups[0].items.map { it.id }.toSet())
+    }
+
+    @Test fun everyGroupMemberIsCloseToTheAnchorInHashAndTime() {
+        val gap = DuplicateFinder.SIMILAR_MAX_TIME_GAP_MS
+        // Fotos idénticas en hash pero cada una a 0,8 × ventana de la anterior: sin cadena, la 3 no va con la 1.
+        val items = listOf(item(1, taken = 0), item(2, taken = gap * 8 / 10), item(3, taken = gap * 16 / 10))
+        val hashes = mapOf(1L to 0L, 2L to 0L, 3L to 0L)
+        val groups = DuplicateFinder.similarGroups(items, hashes)
+        assertEquals(1, groups.size)
+        assertEquals(setOf(1L, 2L), groups[0].items.map { it.id }.toSet())
+    }
+
+    @Test fun exactKeeperPrefersCameraFolderThenOldestThenLowestId() {
+        val copy = item(1, taken = 1000, path = "Pictures/WhatsApp/")
+        val camera = item(2, taken = 9000, path = "DCIM/Camera/")
+        assertEquals(2L, DuplicateFinder.chooseExactKeeper(listOf(copy, camera)).id)
+        val newer = item(3, taken = 9000, path = "Download/")
+        val older = item(4, taken = 1000, path = "Download/")
+        assertEquals(4L, DuplicateFinder.chooseExactKeeper(listOf(newer, older)).id)
+        val a = item(6, taken = 5000, path = "Download/")
+        val b = item(5, taken = 5000, path = "Download/")
+        assertEquals(5L, DuplicateFinder.chooseExactKeeper(listOf(a, b)).id)
+    }
+
+    @Test fun exactDuplicatesUseTheExactKeeperRule() {
+        val copy = item(1, size = 500, taken = 1000, path = "Pictures/Copias/")
+        val camera = item(2, size = 500, taken = 2000, path = "DCIM/Camera/")
+        val group = DuplicateFinder.exactDuplicates(listOf(copy, camera)) { "same" }.single()
+        assertEquals(2L, group.keeperId)
     }
 
     @Test fun similarPhotosFarApartInTimeAreNotGrouped() {

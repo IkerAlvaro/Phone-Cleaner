@@ -21,8 +21,24 @@ import java.io.File
 class AppRepository(private val context: Context) {
     private val pm: PackageManager = context.packageManager
 
-    suspend fun loadApps(only: String? = null): List<AppEntry> = withContext(Dispatchers.IO) {
+    @Volatile private var cache: List<AppEntry>? = null
+    @Volatile private var cacheAt = 0L
+
+    /** Olvida la lista guardada (p. ej. tras desinstalar apps). */
+    fun invalidate() {
+        cache = null
+    }
+
+    /**
+     * Lista de apps. Se guarda en memoria [CACHE_MS]: al volver a una pantalla no se recalcula todo. El estado de
+     * batería sí se relee siempre (es barato y cambia cuando el usuario vuelve de Ajustes).
+     */
+    suspend fun loadApps(only: String? = null, forceRefresh: Boolean = false): List<AppEntry> = withContext(Dispatchers.IO) {
         val power = context.getSystemService(PowerManager::class.java)
+        val cached = cache
+        if (only == null && !forceRefresh && cached != null && android.os.SystemClock.elapsedRealtime() - cacheAt < CACHE_MS) {
+            return@withContext cached.map { it.copy(ignoresBatteryOptimizations = power.isIgnoringBatteryOptimizations(it.packageName)) }
+        }
         val packages = if (only != null) listOf(only) else launchablePackageNames()
         packages.mapNotNull { pkg ->
             val info = packageInfo(pkg, PackageManager.GET_PERMISSIONS) ?: return@mapNotNull null
@@ -38,6 +54,11 @@ class AppRepository(private val context: Context) {
                 startsAtBoot = info.requestedPermissions?.contains(Manifest.permission.RECEIVE_BOOT_COMPLETED) == true,
                 ignoresBatteryOptimizations = power.isIgnoringBatteryOptimizations(pkg),
             )
+        }.also {
+            if (only == null) {
+                cache = it
+                cacheAt = android.os.SystemClock.elapsedRealtime()
+            }
         }
     }
 
@@ -75,6 +96,10 @@ class AppRepository(private val context: Context) {
             pm.queryIntentActivities(intent, 0)
         }
         return activities.map { it.activityInfo.packageName }.distinct().filter { it != context.packageName }
+    }
+
+    private companion object {
+        const val CACHE_MS = 30_000L
     }
 
     private fun packageInfo(pkg: String, flags: Int): PackageInfo? = try {

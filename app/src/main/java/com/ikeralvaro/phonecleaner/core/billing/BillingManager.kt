@@ -40,6 +40,7 @@ class BillingManager(context: Context, private val settings: SettingsRepository)
         .build()
 
     private var product: ProductDetails? = null
+    private val connectedOnce = java.util.concurrent.atomic.AtomicBoolean(false)
 
     private val _price = MutableStateFlow<String?>(null)
     /** Precio con formato de la tienda (p. ej. "2,99 €"), o null si aún no se conoce. */
@@ -48,8 +49,14 @@ class BillingManager(context: Context, private val settings: SettingsRepository)
     private val _message = MutableStateFlow(PurchaseMessage.NONE)
     val message: StateFlow<PurchaseMessage> = _message.asStateFlow()
 
+    /** Conexión inicial, una sola vez por proceso (desde MainActivity). */
+    fun connectOnce() {
+        if (connectedOnce.compareAndSet(false, true)) connect()
+    }
+
     fun connect() {
         if (client.isReady) {
+            if (product == null) queryProduct()
             restorePurchases()
             return
         }
@@ -69,6 +76,7 @@ class BillingManager(context: Context, private val settings: SettingsRepository)
         val details = product
         if (details == null || !client.isReady) {
             _message.value = PurchaseMessage.UNAVAILABLE
+            // connect() vuelve a pedir el producto si aún no se conoce.
             connect()
             return
         }
@@ -121,7 +129,9 @@ class BillingManager(context: Context, private val settings: SettingsRepository)
         val params = QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build()
         client.queryPurchasesAsync(params) { result, purchases ->
             if (result.responseCode != BillingClient.BillingResponseCode.OK) return@queryPurchasesAsync
-            val owned = purchases.filter { productId in it.products && it.purchaseState == Purchase.PurchaseState.PURCHASED }
+            val owned = purchases.filter {
+                productId in it.products && it.purchaseState == Purchase.PurchaseState.PURCHASED && isSignatureValid(it)
+            }
             owned.forEach(::handle)
             if (owned.isEmpty()) scope.launch { settings.setPremium(false) }
         }
@@ -129,10 +139,18 @@ class BillingManager(context: Context, private val settings: SettingsRepository)
 
     private fun handle(purchase: Purchase) {
         if (productId !in purchase.products || purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
+        if (!isSignatureValid(purchase)) {
+            _message.value = PurchaseMessage.ERROR
+            return
+        }
         scope.launch { settings.setPremium(true) }
         if (!purchase.isAcknowledged) {
             val params = AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()
             client.acknowledgePurchase(params) { }
         }
     }
+
+    /** Firma local con la clave de [BillingConfig]; si no hay clave configurada no se comprueba. */
+    private fun isSignatureValid(purchase: Purchase): Boolean =
+        BillingConfig.verify(purchase.originalJson, purchase.signature)
 }

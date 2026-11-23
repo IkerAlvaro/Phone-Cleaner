@@ -45,7 +45,9 @@ fun rememberPermissionActions(onChanged: () -> Unit = {}): PermissionActions {
 
     val runtimeLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
         val activity = context.findActivity()
-        val permanentlyDenied = results.any { (permission, granted) ->
+        // Si el usuario eligió "seleccionar fotos" (acceso parcial) no se le manda a Ajustes.
+        val partial = results["android.permission.READ_MEDIA_VISUAL_USER_SELECTED"] == true
+        val permanentlyDenied = !partial && results.any { (permission, granted) ->
             !granted && activity != null && !ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)
         }
         if (permanentlyDenied) context.startSafely(manager.appDetailsIntent())

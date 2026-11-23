@@ -51,9 +51,12 @@ class JunkScannerTest {
         file("Download/new.pdf", 700)
         file("Download/Trabajo/informe.pdf", 700, ageDays = 200)
         file("Download/app.apk", 900)
-        file("Telegram/cache.tmp", 50)
+        file("Telegram/cache.tmp", 50, ageDays = 10)
+        file("Telegram/nuevo.tmp", 60) // reciente fuera de caché: no es basura
         file("Android/data/com.x/cache/huge.tmp", 9999) // protegido: no se recorre
         file("Android/media/com.gone.app/stuff.bin", 400)
+        dir("Android/media/com.gone.app").setLastModified(System.currentTimeMillis() - 40 * DAY_MS)
+        file("Android/media/com.recent.app/stuff.bin", 400) // modificada hace poco: puede ser una app sin icono
         file("Android/media/com.google.android.gms/x.bin", 400) // sistema: nunca es resto
         dir("Foo/Bar")
         dir("Foo/Baz/Deep")
@@ -71,9 +74,30 @@ class JunkScannerTest {
         assertEquals(setOf("DCIM/.thumbnails"), result.labels(JunkCategory.THUMBNAILS))
         assertEquals(300L, result[JunkCategory.THUMBNAILS]!!.single().sizeBytes)
         assertTrue("Telegram/cache.tmp" in result.labels(JunkCategory.TEMP_FILES))
+        assertFalse("Telegram/nuevo.tmp" in result.labels(JunkCategory.TEMP_FILES))
         assertEquals(setOf("Download/old.pdf"), result.labels(JunkCategory.OLD_DOWNLOADS))
         assertEquals(setOf("Download/app.apk"), result.labels(JunkCategory.APK_OTHER))
         assertEquals(setOf("com.gone.app"), result.labels(JunkCategory.RESIDUAL_FOLDERS))
+    }
+
+    @Test fun ownCompressAndImageCacheAreExcluded() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        File(context.cacheDir, "compress/1.jpg").apply { parentFile!!.mkdirs(); writeBytes(ByteArray(10)) }
+        File(context.cacheDir, "image_cache/x").apply { parentFile!!.mkdirs(); writeBytes(ByteArray(10)) }
+        File(context.cacheDir, "otra/y").apply { parentFile!!.mkdirs(); writeBytes(ByteArray(10)) }
+        val own = scan().labels(JunkCategory.TEMP_FILES).filter { it.startsWith("Phone Cleaner/") }.toSet()
+        assertTrue("Phone Cleaner/otra" in own)
+        assertFalse("Phone Cleaner/compress" in own)
+        assertFalse("Phone Cleaner/image_cache" in own)
+    }
+
+    @Test fun itemsChangedAfterTheScanAreSkipped() {
+        val result = scan()
+        val tmpItem = result[JunkCategory.TEMP_FILES]!!.first { it.label == "Telegram/cache.tmp" }
+        File(root, "Telegram/cache.tmp").writeBytes(ByteArray(80)) // cambia tamaño y fecha
+        val freed = runBlocking { scanner.delete(listOf(tmpItem)) }
+        assertEquals(0L, freed)
+        assertTrue(File(root, "Telegram/cache.tmp").exists())
     }
 
     @Test fun neverEntersProtectedAppData() {

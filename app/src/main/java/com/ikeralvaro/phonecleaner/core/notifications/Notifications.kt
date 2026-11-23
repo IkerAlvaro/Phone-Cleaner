@@ -1,5 +1,6 @@
 package com.ikeralvaro.phonecleaner.core.notifications
 
+import androidx.core.graphics.scale
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -39,7 +40,7 @@ object Notifications {
     fun largeIcon(context: Context): Bitmap? = logo ?: try {
         val size = context.resources.getDimensionPixelSize(android.R.dimen.notification_large_icon_width)
         BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)
-            ?.let { Bitmap.createScaledBitmap(it, size, size, true) }
+            ?.let { it.scale(size, size) }
             ?.also { logo = it }
     } catch (_: Exception) {
         null
